@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Планер</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <h1>Планер</h1>
+    <nav class="tabs" role="tablist">
+      <button type="button" class="tab active" data-tab="weekly" role="tab" aria-selected="true">Недельный планер</button>
+      <button type="button" class="tab" data-tab="eisenhower" role="tab" aria-selected="false">Матрица Эйзенхауэра</button>
+    </nav>
+  </header>
+
+  <main>
+    <section id="weekly" class="panel active" role="tabpanel">
+      <div class="week-toolbar">
+        <button type="button" id="prevWeek" class="btn-icon" title="Предыдущая неделя">←</button>
+        <div class="week-label">
+          <span id="weekRange"></span>
+          <input type="date" id="weekStart" aria-label="Начало недели (понедельник)" />
+        </div>
+        <button type="button" id="nextWeek" class="btn-icon" title="Следующая неделя">→</button>
+        <button type="button" id="todayWeek" class="btn-secondary">Сегодня</button>
+      </div>
+      <div id="daysGrid" class="days-grid"></div>
+    </section>
+
+    <section id="eisenhower" class="panel" role="tabpanel" hidden>
+      <div id="matrixGrid" class="matrix-grid"></div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

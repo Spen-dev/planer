@@ -1,0 +1,355 @@
+:root {
+  --text: #434343;
+  --border: #e8e0d8;
+  --bg: #faf8f6;
+  --shadow: 0 2px 12px rgba(67, 67, 67, 0.08);
+  --radius: 10px;
+  --font: "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  color: var(--text);
+  background: var(--bg);
+  min-height: 100vh;
+}
+
+.app-header {
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+  padding: 1rem 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 600;
+}
+
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.tab {
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text);
+  padding: 0.45rem 1rem;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.tab:hover {
+  background: #f5f0eb;
+}
+
+.tab.active {
+  background: #434343;
+  color: #fff;
+  border-color: #434343;
+}
+
+main {
+  padding: 1.25rem 1.5rem 2rem;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.panel[hidden] {
+  display: none !important;
+}
+
+.week-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.week-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+#weekRange {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+#weekStart {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.35rem 0.5rem;
+  font-family: inherit;
+}
+
+.btn-icon,
+.btn-secondary {
+  border: 1px solid var(--border);
+  background: #fff;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+
+.btn-icon {
+  width: 2.25rem;
+  height: 2.25rem;
+  font-size: 1.1rem;
+}
+
+.btn-secondary {
+  padding: 0.45rem 0.9rem;
+  font-size: 0.85rem;
+}
+
+.btn-icon:hover,
+.btn-secondary:hover {
+  background: #f0ebe5;
+}
+
+.days-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.day-card {
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 520px;
+}
+
+.day-header {
+  padding: 0.65rem 0.85rem;
+  text-align: center;
+  font-weight: 600;
+}
+
+.day-date {
+  font-size: 0.85rem;
+  opacity: 0.85;
+  font-weight: 500;
+}
+
+.progress-block {
+  padding: 0.6rem 0.85rem;
+  background: #fff;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.progress-label {
+  font-size: 0.75rem;
+  margin-bottom: 0.35rem;
+}
+
+.progress-bar-wrap {
+  height: 8px;
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.25s ease;
+}
+
+.progress-value {
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+  text-align: right;
+}
+
+.tasks-section {
+  flex: 1;
+  padding: 0.5rem 0.65rem 0.25rem;
+}
+
+.tasks-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin: 0 0 0.4rem 0.2rem;
+}
+
+.task-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin-bottom: 0.35rem;
+}
+
+.task-row input[type="checkbox"] {
+  margin-top: 0.35rem;
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  accent-color: currentColor;
+  cursor: pointer;
+}
+
+.task-row input[type="text"] {
+  flex: 1;
+  border: none;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  background: transparent;
+  padding: 0.3rem 0.2rem;
+  font-family: inherit;
+  font-size: 0.85rem;
+  color: var(--text);
+}
+
+.task-row input[type="text"]:focus {
+  outline: none;
+  border-bottom-color: rgba(0, 0, 0, 0.35);
+}
+
+.task-row.done input[type="text"] {
+  text-decoration: line-through;
+  opacity: 0.55;
+}
+
+.stats-block {
+  padding: 0.55rem 0.85rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+}
+
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.stat-item strong {
+  font-weight: 600;
+}
+
+.notes-section {
+  padding: 0.5rem 0.65rem 0.75rem;
+}
+
+.notes-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin: 0 0 0.4rem 0.2rem;
+}
+
+.note-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.3rem;
+}
+
+.note-num {
+  font-size: 0.75rem;
+  opacity: 0.6;
+  width: 1rem;
+  text-align: right;
+}
+
+.note-row input {
+  flex: 1;
+  border: none;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  background: transparent;
+  padding: 0.25rem 0.2rem;
+  font-family: inherit;
+  font-size: 0.82rem;
+}
+
+.note-row input:focus {
+  outline: none;
+  border-bottom-color: rgba(0, 0, 0, 0.35);
+}
+
+/* Eisenhower */
+.matrix-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 768px) {
+  .matrix-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.quadrant {
+  background: #fff;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 0.85rem 1rem 1rem;
+  min-height: 320px;
+}
+
+.quadrant h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid;
+}
+
+.quadrant.q1 h2 { border-color: #e57373; color: #c62828; }
+.quadrant.q2 h2 { border-color: #ffb74d; color: #e65100; }
+.quadrant.q3 h2 { border-color: #64b5f6; color: #1565c0; }
+.quadrant.q4 h2 { border-color: #bdbdbd; color: #616161; }
+
+.quadrant.q1 { background: linear-gradient(180deg, #fff5f5 0%, #fff 40%); }
+.quadrant.q2 { background: linear-gradient(180deg, #fff8e8 0%, #fff 40%); }
+.quadrant.q3 { background: linear-gradient(180deg, #f0f7ff 0%, #fff 40%); }
+.quadrant.q4 { background: linear-gradient(180deg, #f5f5f5 0%, #fff 40%); }
+
+.matrix-task {
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid #eee;
+  padding: 0.45rem 0.25rem;
+  margin-bottom: 0.2rem;
+  font-family: inherit;
+  font-size: 0.88rem;
+  background: transparent;
+}
+
+.matrix-task:focus {
+  outline: none;
+  border-bottom-color: #bbb;
+}
+
+@media (max-width: 600px) {
+  .app-header {
+    padding: 0.85rem 1rem;
+  }
+
+  main {
+    padding: 1rem;
+  }
+}
