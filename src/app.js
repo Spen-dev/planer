@@ -1,5 +1,7 @@
 const STORAGE_KEY = "planer-data-v2";
 const CRYPTO_META_KEY = "planer-crypto-v1";
+const REMEMBER_KEY = "planer-remember-v1";
+const DEVICE_KEY = "planer-device-key-v1";
 const TASKS_PER_DAY = 15;
 const NOTES_PER_DAY = 4;
 const MATRIX_TASKS = 14;
@@ -230,6 +232,33 @@ const passwordInput = document.getElementById("passwordInput");
 const passwordConfirm = document.getElementById("passwordConfirm");
 const passwordError = document.getElementById("passwordError");
 const passwordSubmit = document.getElementById("passwordSubmit");
+const rememberWrap = document.getElementById("rememberWrap");
+const rememberPassword = document.getElementById("rememberPassword");
+
+let matrixReady = false;
+
+function isPreLicensed() {
+  return location.hash.includes("licensed=1");
+}
+
+async function saveRememberedPassword(password) {
+  const wrapped = await encryptText(password, DEVICE_KEY);
+  localStorage.setItem(REMEMBER_KEY, JSON.stringify(wrapped));
+}
+
+async function tryRememberedPassword() {
+  const raw = localStorage.getItem(REMEMBER_KEY);
+  if (!raw) return false;
+  try {
+    sessionPassword = await decryptText(JSON.parse(raw), DEVICE_KEY);
+    await loadState();
+    return true;
+  } catch {
+    sessionPassword = null;
+    localStorage.removeItem(REMEMBER_KEY);
+    return false;
+  }
+}
 
 function showOverlay(el) {
   el.hidden = false;
@@ -246,6 +275,7 @@ function showLicenseOverlay() {
 }
 
 async function ensureLicense() {
+  if (isPreLicensed()) return true;
   if (!window.pywebview?.api?.check_license) return true;
   const res = await window.pywebview.api.check_license();
   if (res?.ok) return true;
@@ -276,6 +306,8 @@ function showPasswordOverlay(mode) {
     ? "Пароль шифрует задачи и заметки на этом компьютере."
     : "Для доступа к зашифрованным данным нужен пароль.";
   passwordConfirm.hidden = !isSetup;
+  rememberWrap.hidden = false;
+  rememberPassword.checked = Boolean(localStorage.getItem(REMEMBER_KEY));
   showOverlay(passwordOverlay);
   passwordInput.focus();
   return new Promise((resolve, reject) => {
@@ -294,6 +326,11 @@ function showPasswordOverlay(mode) {
           return;
         }
         sessionPassword = pass;
+        if (rememberPassword.checked) {
+          await saveRememberedPassword(pass);
+        } else {
+          localStorage.removeItem(REMEMBER_KEY);
+        }
         hideOverlay(passwordOverlay);
         resolve(pass);
         return;
@@ -301,6 +338,11 @@ function showPasswordOverlay(mode) {
       sessionPassword = pass;
       try {
         await loadState();
+        if (rememberPassword.checked) {
+          await saveRememberedPassword(pass);
+        } else {
+          localStorage.removeItem(REMEMBER_KEY);
+        }
         hideOverlay(passwordOverlay);
         resolve(pass);
       } catch {
@@ -313,6 +355,9 @@ function showPasswordOverlay(mode) {
 }
 
 async function ensurePassword() {
+  if (hasCryptoSetup() && (await tryRememberedPassword())) {
+    return;
+  }
   if (!hasCryptoSetup()) {
     await showPasswordOverlay("setup");
     return;
@@ -321,12 +366,10 @@ async function ensurePassword() {
 }
 
 async function bootApp() {
-  const licensed = await ensureLicense();
-  if (!licensed) return;
+  if (!(await ensureLicense())) return;
   await ensurePassword();
   state = await loadState();
   renderWeekly();
-  renderMatrix();
 }
 
 document.querySelectorAll(".tab").forEach((btn) => {
@@ -343,6 +386,10 @@ document.querySelectorAll(".tab").forEach((btn) => {
       p.classList.toggle("active", active);
       p.hidden = !active;
     });
+    if (tab === "eisenhower" && !matrixReady) {
+      renderMatrix();
+      matrixReady = true;
+    }
   });
 });
 

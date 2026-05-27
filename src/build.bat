@@ -8,6 +8,7 @@ python bundle.py
 echo.
 echo Building Planer (fast onedir mode)...
 python -m PyInstaller --noconfirm --clean --onedir --windowed --name Planer ^
+  --optimize=2 ^
   --add-data "app.html;." ^
   --noupx ^
   --exclude-module numpy ^
@@ -22,6 +23,10 @@ python -m PyInstaller --noconfirm --clean --onedir --windowed --name Planer ^
   --exclude-module pydoc ^
   --exclude-module doctest ^
   --exclude-module unittest ^
+  --exclude-module tkinter ^
+  --exclude-module _tkinter ^
+  --exclude-module turtle ^
+  --exclude-module curses ^
   --hidden-import pythonnet ^
   --hidden-import clr_loader ^
   launcher.py
@@ -36,4 +41,3 @@ rmdir /s /q build dist 2>nul
 del /q app.html Planer.spec 2>nul
 echo.
 echo Done: ..\Planer.exe + ..\_internal\
-echo Onedir build starts much faster than onefile.

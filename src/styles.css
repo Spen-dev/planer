@@ -401,6 +401,20 @@ main {
   margin: -0.25rem 0 0.65rem !important;
 }
 
+.remember-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+  margin: 0 0 0.75rem;
+  cursor: pointer;
+}
+
+.remember-row input {
+  width: auto;
+  margin: 0;
+}
+
 @media (max-width: 600px) {
   .app-header {
     padding: 0.85rem 1rem;

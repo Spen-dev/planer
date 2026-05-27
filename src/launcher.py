@@ -10,42 +10,17 @@ def app_dir() -> str:
     return os.path.dirname(os.path.abspath(__file__))
 
 
-def index_path() -> str:
-    root = app_dir()
-    name = "app.html" if getattr(sys, "frozen", False) else "index.html"
-    path = os.path.join(root, name)
+def index_url() -> str:
+    path = os.path.join(app_dir(), "app.html" if getattr(sys, "frozen", False) else "index.html")
     if not os.path.isfile(path):
-        raise FileNotFoundError(f"{name} not found in {root}")
-    return path
+        raise FileNotFoundError(path)
+    url = path.replace("\\", "/")
+    if getattr(sys, "frozen", False):
+        from license import is_licensed
 
-
-def ensure_license_interactive() -> None:
-    from license import activate_license, is_licensed
-
-    if is_licensed():
-        return
-
-    import tkinter as tk
-    from tkinter import messagebox, simpledialog
-
-    root = tk.Tk()
-    root.withdraw()
-    root.attributes("-topmost", True)
-
-    while not is_licensed():
-        key = simpledialog.askstring(
-            "Планер — активация",
-            "Введите лицензионный ключ:\nPLAN-XXXX-XXXX-XXXX-XXXX",
-            parent=root,
-        )
-        if not key:
-            root.destroy()
-            sys.exit(0)
-        ok, error = activate_license(key)
-        if not ok:
-            messagebox.showerror("Планер", error, parent=root)
-
-    root.destroy()
+        if is_licensed():
+            return f"{url}#licensed=1"
+    return url
 
 
 class Api:
@@ -72,10 +47,9 @@ class Api:
 
         try:
             window = webview.windows[0]
-            default_name = "planer-backup.planer"
             path = window.create_file_dialog(
                 webview.SAVE_DIALOG,
-                save_filename=default_name,
+                save_filename="planer-backup.planer",
                 file_types=("Planer Backup (*.planer)", "JSON Files (*.json)"),
             )
             if not path:
@@ -91,14 +65,11 @@ class Api:
 
 
 def main() -> None:
-    if getattr(sys, "frozen", False):
-        ensure_license_interactive()
-
     import webview
 
     webview.create_window(
         "Планер",
-        url=index_path(),
+        url=index_url(),
         width=1280,
         height=800,
         min_size=(900, 600),
