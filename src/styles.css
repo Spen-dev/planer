@@ -49,6 +49,19 @@ body {
   flex-direction: column;
 }
 
+html.desktop-protected body {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+html.desktop-protected input,
+html.desktop-protected textarea,
+html.desktop-protected select,
+html.desktop-protected [contenteditable="true"] {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
 body.boot-pending .app-header,
 body.boot-pending main {
   visibility: hidden;

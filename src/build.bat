@@ -1,7 +1,7 @@
 @echo off
 cd /d "%~dp0"
 echo Installing build dependencies...
-python -m pip install -q pywebview pythonnet pyinstaller pillow
+python -m pip install -q pywebview pythonnet pyinstaller pillow rjsmin
 echo.
 echo Creating application icon...
 python create_icon.py

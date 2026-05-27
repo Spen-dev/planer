@@ -197,6 +197,7 @@ function startApp() {
   if (window.__planerBooted) return;
   window.__planerBooted = true;
   window.__planerMaximized = false;
+  initCodeProtection();
   void bootApp();
 }
 

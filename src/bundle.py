@@ -1,5 +1,7 @@
-"""Bundle index.html, styles.css and js/*.js into a single app.html for the EXE."""
+"""Bundle index.html, styles.css and js/*.js into a single protected app.html for the EXE."""
+import base64
 import re
+import zlib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
@@ -11,6 +13,7 @@ js_files = [
     ROOT / "js" / "weekly.js",
     ROOT / "js" / "matrix.js",
     ROOT / "js" / "settings.js",
+    ROOT / "js" / "protect.js",
     ROOT / "js" / "app.js",
 ]
 js = "\n".join(path.read_text(encoding="utf-8") for path in js_files)
@@ -23,18 +26,39 @@ def minify_css(code: str) -> str:
 
 
 def minify_js(code: str) -> str:
-    code = re.sub(r"/\*[\s\S]*?\*/", "", code)
-    lines = []
-    for line in code.splitlines():
-        stripped = re.sub(r"\s+//.*$", "", line)
-        if stripped.strip():
-            lines.append(stripped.strip())
-    return "\n".join(lines)
+    try:
+        import rjsmin
+
+        return rjsmin.jsmin(code)
+    except ImportError:
+        code = re.sub(r"/\*[\s\S]*?\*/", "", code)
+        lines = []
+        for line in code.splitlines():
+            stripped = re.sub(r"\s+//.*$", "", line)
+            if stripped.strip():
+                lines.append(stripped.strip())
+        return "\n".join(lines)
+
+
+def pack_js(code: str) -> str:
+    compressed = zlib.compress(code.encode("utf-8"), 9)
+    encoded = base64.b64encode(compressed).decode("ascii")
+    chunks = [encoded[i : i + 120] for i in range(0, len(encoded), 120)]
+    payload = "+".join(f'"{chunk}"' for chunk in chunks)
+    return (
+        "(async()=>{try{"
+        f"const p={payload};"
+        "const b=Uint8Array.from(atob(p),c=>c.charCodeAt(0));"
+        'const t=await new Response(new Blob([b]).stream().pipeThrough('
+        'new DecompressionStream("deflate"))).text();'
+        "new Function(t)();"
+        "}catch(e){console.error(e);}})();"
+    )
 
 
 css = minify_css(css)
-js = minify_js(js)
-js = "window.__PLANER_DESKTOP__=true;\n" + js
+js = minify_js("window.__PLANER_DESKTOP__=true;\n" + js)
+js = pack_js(js)
 
 html = html.replace(
     '<link rel="stylesheet" href="styles.css" />',
