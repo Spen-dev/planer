@@ -9,12 +9,16 @@ echo.
 echo Building single Planer.exe...
 python -m PyInstaller --noconfirm --clean --onefile --windowed --name Planer ^
   --add-data "app.html;." ^
+  --noupx ^
   --exclude-module numpy ^
   --exclude-module PIL ^
   --exclude-module pandas ^
   --exclude-module matplotlib ^
   --exclude-module scipy ^
   --exclude-module pytest ^
+  --exclude-module pythonnet ^
+  --exclude-module clr ^
+  --exclude-module clr_loader ^
   launcher.py
 if not exist "dist\Planer.exe" (
   echo Build failed.
