@@ -24,9 +24,9 @@ if not exist "dist\Planer.exe" (
   echo Build failed.
   exit /b 1
 )
-move /Y "dist\Planer.exe" "Planer.exe" >nul
+move /Y "dist\Planer.exe" "..\Planer.exe" >nul
 rmdir /s /q build dist 2>nul
 del /q app.html Planer.spec 2>nul
 echo.
-echo Done: Planer.exe
-echo You only need this one file to run the app.
+echo Done: ..\Planer.exe
+echo In project root there is only one file to run.

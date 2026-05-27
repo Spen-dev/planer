@@ -3,8 +3,9 @@ _*.json
 *.tmp
 .DS_Store
 Thumbs.db
-build/
-dist/
-*.spec
-app.html
+src/build/
+src/dist/
+src/*.spec
+src/app.html
 __pycache__/
+src/__pycache__/
