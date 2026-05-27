@@ -1,4 +1,4 @@
-"""Desktop launcher for the planner web app."""
+"""Desktop launcher — single Planer.exe with embedded app."""
 import os
 import sys
 import webview
@@ -10,21 +10,25 @@ def app_dir() -> str:
     return os.path.dirname(os.path.abspath(__file__))
 
 
-def main() -> None:
+def index_path() -> str:
     root = app_dir()
-    index = os.path.join(root, "index.html")
-    if not os.path.isfile(index):
-        raise FileNotFoundError(f"index.html not found in {root}")
+    name = "app.html" if getattr(sys, "frozen", False) else "index.html"
+    path = os.path.join(root, name)
+    if not os.path.isfile(path):
+        raise FileNotFoundError(f"{name} not found in {root}")
+    return path
 
+
+def main() -> None:
     webview.create_window(
         "Планер",
-        url=index,
+        url=index_path(),
         width=1280,
         height=800,
         min_size=(900, 600),
         text_select=True,
     )
-    webview.start()
+    webview.start(gui="edgechromium")
 
 
 if __name__ == "__main__":

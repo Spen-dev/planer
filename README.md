@@ -21,28 +21,18 @@
 
 Данные сохраняются в `localStorage` браузера.
 
-## Запуск
+## Запуск (Windows)
 
-### EXE (Windows)
+Запустите **`Planer.exe`** — один файл, отдельное окно приложения, данные сохраняются локально.
 
-После сборки запустите `dist\Planer.exe` — откроется отдельное окно приложения.
-
-Сборка:
+### Сборка exe
 
 ```bat
 build.bat
 ```
 
-Нужны Python 3 и [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/) (обычно уже есть в Windows 10/11).
+Создаёт один файл `Planer.exe` в корне проекта. Нужны Python 3 и [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/).
 
-### Браузер
+### Разработка в браузере
 
-Откройте `index.html` в браузере (двойной клик или `start.bat`).
-
-Для локального сервера (необязательно):
-
-```bash
-python -m http.server 8080
-```
-
-Затем откройте http://localhost:8080
+Откройте `index.html` в браузере.

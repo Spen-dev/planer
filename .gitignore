@@ -6,4 +6,6 @@ Thumbs.db
 build/
 dist/
 *.spec
+app.html
+Planer.exe
 __pycache__/
