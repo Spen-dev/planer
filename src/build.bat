@@ -1,13 +1,17 @@
 @echo off
 cd /d "%~dp0"
 echo Installing build dependencies...
-python -m pip install -q pywebview pythonnet pyinstaller
+python -m pip install -q pywebview pythonnet pyinstaller pillow
+echo.
+echo Creating application icon...
+python create_icon.py
 echo.
 echo Bundling app into one HTML file...
 python bundle.py
 echo.
 echo Building Planer (fast onedir mode)...
 python -m PyInstaller --noconfirm --clean --onedir --windowed --name Planer ^
+  --icon planner.ico ^
   --optimize=2 ^
   --add-data "app.html;." ^
   --noupx ^
