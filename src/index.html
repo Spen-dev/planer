@@ -35,6 +35,27 @@
     </section>
   </main>
 
+  <div id="licenseOverlay" class="overlay" hidden>
+    <div class="overlay-card">
+      <h2>Активация Планера</h2>
+      <p>Введите лицензионный ключ для запуска приложения.</p>
+      <input type="text" id="licenseKey" placeholder="PLAN-XXXX-XXXX-XXXX-XXXX" autocomplete="off" />
+      <p id="licenseError" class="overlay-error" hidden></p>
+      <button type="button" id="licenseActivate" class="btn-secondary">Активировать</button>
+    </div>
+  </div>
+
+  <div id="passwordOverlay" class="overlay" hidden>
+    <div class="overlay-card">
+      <h2 id="passwordTitle">Пароль шифрования</h2>
+      <p id="passwordHint">Данные хранятся в зашифрованном виде на этом компьютере.</p>
+      <input type="password" id="passwordInput" placeholder="Пароль" autocomplete="off" />
+      <input type="password" id="passwordConfirm" placeholder="Повтор пароля" autocomplete="off" hidden />
+      <p id="passwordError" class="overlay-error" hidden></p>
+      <button type="button" id="passwordSubmit" class="btn-secondary">Продолжить</button>
+    </div>
+  </div>
+
   <script src="app.js"></script>
 </body>
 </html>

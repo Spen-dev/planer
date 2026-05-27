@@ -1,4 +1,5 @@
-const STORAGE_KEY = "planer-data-v1";
+const STORAGE_KEY = "planer-data-v2";
+const CRYPTO_META_KEY = "planer-crypto-v1";
 const TASKS_PER_DAY = 15;
 const NOTES_PER_DAY = 4;
 const MATRIX_TASKS = 14;
@@ -24,6 +25,9 @@ const MONTHS = [
   "января", "февраля", "марта", "апреля", "мая", "июня",
   "июля", "августа", "сентября", "октября", "ноября", "декабря",
 ];
+
+let state = defaultState();
+let sessionPassword = null;
 
 function defaultDay() {
   return {
@@ -55,26 +59,109 @@ function defaultState() {
   };
 }
 
-function loadState() {
+function b64(bytes) {
+  let binary = "";
+  bytes.forEach((b) => {
+    binary += String.fromCharCode(b);
+  });
+  return btoa(binary);
+}
+
+function b64dec(str) {
+  const binary = atob(str);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+
+async function deriveKey(password, salt) {
+  const enc = new TextEncoder();
+  const baseKey = await crypto.subtle.importKey(
+    "raw",
+    enc.encode(password),
+    "PBKDF2",
+    false,
+    ["deriveKey"],
+  );
+  return crypto.subtle.deriveKey(
+    { name: "PBKDF2", salt, iterations: 120000, hash: "SHA-256" },
+    baseKey,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["encrypt", "decrypt"],
+  );
+}
+
+async function encryptText(text, password) {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const key = await deriveKey(password, salt);
+  const cipher = await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv },
+    key,
+    new TextEncoder().encode(text),
+  );
+  return {
+    v: 1,
+    encrypted: true,
+    salt: b64(salt),
+    iv: b64(iv),
+    data: b64(new Uint8Array(cipher)),
+  };
+}
+
+async function decryptText(payload, password) {
+  const key = await deriveKey(password, b64dec(payload.salt));
+  const plain = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv: b64dec(payload.iv) },
+    key,
+    b64dec(payload.data),
+  );
+  return new TextDecoder().decode(plain);
+}
+
+function hasCryptoSetup() {
+  return Boolean(localStorage.getItem(CRYPTO_META_KEY));
+}
+
+function parsePlainState(raw) {
+  const parsed = JSON.parse(raw);
+  return {
+    weekStart: parsed.weekStart || defaultState().weekStart,
+    weeks: parsed.weeks || {},
+    matrix: { ...defaultMatrix(), ...parsed.matrix },
+  };
+}
+
+async function loadState() {
+  let raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) raw = localStorage.getItem("planer-data-v1");
+  if (!raw) return defaultState();
+
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return defaultState();
     const parsed = JSON.parse(raw);
-    return {
-      weekStart: parsed.weekStart || defaultState().weekStart,
-      weeks: parsed.weeks || {},
-      matrix: { ...defaultMatrix(), ...parsed.matrix },
-    };
-  } catch {
+    if (parsed?.encrypted) {
+      if (!sessionPassword) throw new Error("NO_PASSWORD");
+      const text = await decryptText(parsed, sessionPassword);
+      return parsePlainState(text);
+    }
+    return parsePlainState(raw);
+  } catch (err) {
+    if (String(err?.message || err) === "NO_PASSWORD") throw err;
     return defaultState();
   }
 }
 
-function saveState() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+async function saveState() {
+  const plain = JSON.stringify(state);
+  if (sessionPassword) {
+    const encrypted = await encryptText(plain, sessionPassword);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(encrypted));
+    localStorage.setItem(CRYPTO_META_KEY, "1");
+    return;
+  }
+  localStorage.setItem(STORAGE_KEY, plain);
 }
-
-let state = loadState();
 
 function mondayOf(date) {
   const d = new Date(date);
@@ -115,10 +202,6 @@ function getWeek(weekStart) {
   return state.weeks[weekStart];
 }
 
-function countFilledTasks(tasks) {
-  return tasks.filter((t) => t.text.trim()).length;
-}
-
 function calcDayStats(day) {
   const filled = day.tasks.filter((t) => t.text.trim());
   const total = filled.length;
@@ -136,7 +219,116 @@ function escapeHtml(s) {
     .replace(/"/g, "&quot;");
 }
 
-/* Tabs */
+const licenseOverlay = document.getElementById("licenseOverlay");
+const licenseKeyInput = document.getElementById("licenseKey");
+const licenseError = document.getElementById("licenseError");
+const licenseActivate = document.getElementById("licenseActivate");
+const passwordOverlay = document.getElementById("passwordOverlay");
+const passwordTitle = document.getElementById("passwordTitle");
+const passwordHint = document.getElementById("passwordHint");
+const passwordInput = document.getElementById("passwordInput");
+const passwordConfirm = document.getElementById("passwordConfirm");
+const passwordError = document.getElementById("passwordError");
+const passwordSubmit = document.getElementById("passwordSubmit");
+
+function showOverlay(el) {
+  el.hidden = false;
+}
+
+function hideOverlay(el) {
+  el.hidden = true;
+}
+
+function showLicenseOverlay() {
+  licenseError.hidden = true;
+  showOverlay(licenseOverlay);
+  licenseKeyInput.focus();
+}
+
+async function ensureLicense() {
+  if (!window.pywebview?.api?.check_license) return true;
+  const res = await window.pywebview.api.check_license();
+  if (res?.ok) return true;
+  return new Promise((resolve) => {
+    showLicenseOverlay();
+    licenseActivate.onclick = async () => {
+      licenseError.hidden = true;
+      const key = licenseKeyInput.value.trim();
+      const activation = await window.pywebview.api.activate_license(key);
+      if (activation?.ok) {
+        hideOverlay(licenseOverlay);
+        resolve(true);
+        return;
+      }
+      licenseError.textContent = activation?.error || "Не удалось активировать ключ.";
+      licenseError.hidden = false;
+    };
+  });
+}
+
+function showPasswordOverlay(mode) {
+  passwordError.hidden = true;
+  passwordInput.value = "";
+  passwordConfirm.value = "";
+  const isSetup = mode === "setup";
+  passwordTitle.textContent = isSetup ? "Задайте пароль" : "Введите пароль";
+  passwordHint.textContent = isSetup
+    ? "Пароль шифрует задачи и заметки на этом компьютере."
+    : "Для доступа к зашифрованным данным нужен пароль.";
+  passwordConfirm.hidden = !isSetup;
+  showOverlay(passwordOverlay);
+  passwordInput.focus();
+  return new Promise((resolve, reject) => {
+    passwordSubmit.onclick = async () => {
+      passwordError.hidden = true;
+      const pass = passwordInput.value;
+      if (pass.length < 6) {
+        passwordError.textContent = "Пароль должен быть не короче 6 символов.";
+        passwordError.hidden = false;
+        return;
+      }
+      if (isSetup) {
+        if (pass !== passwordConfirm.value) {
+          passwordError.textContent = "Пароли не совпадают.";
+          passwordError.hidden = false;
+          return;
+        }
+        sessionPassword = pass;
+        hideOverlay(passwordOverlay);
+        resolve(pass);
+        return;
+      }
+      sessionPassword = pass;
+      try {
+        await loadState();
+        hideOverlay(passwordOverlay);
+        resolve(pass);
+      } catch {
+        sessionPassword = null;
+        passwordError.textContent = "Неверный пароль.";
+        passwordError.hidden = false;
+      }
+    };
+  });
+}
+
+async function ensurePassword() {
+  if (!hasCryptoSetup()) {
+    await showPasswordOverlay("setup");
+    return;
+  }
+  await showPasswordOverlay("unlock");
+}
+
+async function bootApp() {
+  const licensed = await ensureLicense();
+  if (!licensed) return;
+  await ensurePassword();
+  state = await loadState();
+  renderWeekly();
+  renderMatrix();
+}
+
 document.querySelectorAll(".tab").forEach((btn) => {
   btn.addEventListener("click", () => {
     document.querySelectorAll(".tab").forEach((b) => {
@@ -154,7 +346,6 @@ document.querySelectorAll(".tab").forEach((btn) => {
   });
 });
 
-/* Week navigation */
 const weekStartInput = document.getElementById("weekStart");
 const weekRangeEl = document.getElementById("weekRange");
 const daysGrid = document.getElementById("daysGrid");
@@ -169,8 +360,9 @@ function updateWeekLabel() {
 
 function backupPayload() {
   return {
-    version: 1,
+    version: 2,
     exportedAt: new Date().toISOString(),
+    encrypted: Boolean(sessionPassword),
     state,
   };
 }
@@ -189,12 +381,21 @@ function downloadJson(filename, obj) {
 
 async function saveBackup() {
   const payload = backupPayload();
-  const name = `planer-backup-${state.weekStart}.json`;
+  let output = payload;
 
-  // EXE (pywebview) path
+  if (sessionPassword) {
+    output = await encryptText(JSON.stringify(payload), sessionPassword);
+    output.version = 2;
+    output.exportedAt = payload.exportedAt;
+  }
+
+  const name = sessionPassword
+    ? `planer-backup-${state.weekStart}.planer`
+    : `planer-backup-${state.weekStart}.json`;
+
   try {
     if (window.pywebview?.api?.save_backup) {
-      const res = await window.pywebview.api.save_backup(JSON.stringify(payload));
+      const res = await window.pywebview.api.save_backup(JSON.stringify(output));
       if (res?.ok) return;
       if (res?.cancelled) return;
       alert(res?.error || "Не удалось сохранить файл.");
@@ -205,26 +406,22 @@ async function saveBackup() {
     return;
   }
 
-  // Browser fallback
-  downloadJson(name, payload);
+  downloadJson(name, output);
 }
 
 document.getElementById("prevWeek").addEventListener("click", () => {
   state.weekStart = addDays(state.weekStart, -7);
-  saveState();
-  renderWeekly();
+  void saveState().then(renderWeekly);
 });
 
 document.getElementById("nextWeek").addEventListener("click", () => {
   state.weekStart = addDays(state.weekStart, 7);
-  saveState();
-  renderWeekly();
+  void saveState().then(renderWeekly);
 });
 
 document.getElementById("todayWeek").addEventListener("click", () => {
   state.weekStart = toDateString(mondayOf(new Date()));
-  saveState();
-  renderWeekly();
+  void saveState().then(renderWeekly);
 });
 
 if (saveBtn) {
@@ -236,8 +433,7 @@ if (saveBtn) {
 weekStartInput.addEventListener("change", () => {
   const picked = parseDate(weekStartInput.value);
   state.weekStart = toDateString(mondayOf(picked));
-  saveState();
-  renderWeekly();
+  void saveState().then(renderWeekly);
 });
 
 function renderWeekly() {
@@ -323,8 +519,7 @@ function bindWeeklyEvents() {
       const week = getWeek(state.weekStart);
       week.days[dayIdx].tasks[taskIdx].done = el.checked;
       el.closest(".task-row").classList.toggle("done", el.checked);
-      saveState();
-      refreshDayStats(dayIdx);
+      void saveState().then(() => refreshDayStats(dayIdx));
     });
   });
 
@@ -333,8 +528,7 @@ function bindWeeklyEvents() {
       const dayIdx = Number(el.dataset.day);
       const taskIdx = Number(el.dataset.task);
       getWeek(state.weekStart).days[dayIdx].tasks[taskIdx].text = el.value;
-      saveState();
-      refreshDayStats(dayIdx);
+      void saveState().then(() => refreshDayStats(dayIdx));
     });
   });
 
@@ -343,7 +537,7 @@ function bindWeeklyEvents() {
       const dayIdx = Number(el.dataset.day);
       const noteIdx = Number(el.dataset.note);
       getWeek(state.weekStart).days[dayIdx].notes[noteIdx] = el.value;
-      saveState();
+      void saveState();
     });
   });
 }
@@ -364,7 +558,6 @@ function refreshDayStats(dayIdx) {
   statItems[1].textContent = stats.notDone;
 }
 
-/* Eisenhower matrix */
 const matrixGrid = document.getElementById("matrixGrid");
 
 function renderMatrix() {
@@ -384,7 +577,7 @@ function renderMatrix() {
       input.addEventListener("input", () => {
         if (!state.matrix[q.id]) state.matrix[q.id] = defaultMatrix()[q.id];
         state.matrix[q.id][i] = input.value;
-        saveState();
+        void saveState();
       });
       block.appendChild(input);
     }
@@ -392,5 +585,4 @@ function renderMatrix() {
   }
 }
 
-renderWeekly();
-renderMatrix();
+void bootApp();

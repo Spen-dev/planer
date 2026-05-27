@@ -346,6 +346,61 @@ main {
   border-bottom-color: #bbb;
 }
 
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(67, 67, 67, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 1rem;
+}
+
+.overlay[hidden] {
+  display: none !important;
+}
+
+.overlay-card {
+  width: min(420px, 100%);
+  background: #fff;
+  border-radius: 12px;
+  padding: 1.25rem 1.35rem 1.35rem;
+  box-shadow: var(--shadow);
+}
+
+.overlay-card h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.15rem;
+}
+
+.overlay-card p {
+  margin: 0 0 0.85rem;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.overlay-card input {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.55rem 0.65rem;
+  font-family: inherit;
+  font-size: 0.9rem;
+  margin-bottom: 0.65rem;
+}
+
+.overlay-card input:focus {
+  outline: none;
+  border-color: #999;
+}
+
+.overlay-error {
+  color: #c62828;
+  font-size: 0.85rem;
+  margin: -0.25rem 0 0.65rem !important;
+}
+
 @media (max-width: 600px) {
   .app-header {
     padding: 0.85rem 1rem;

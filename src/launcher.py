@@ -4,6 +4,8 @@ import sys
 import json
 import webview
 
+from license import activate_license, is_licensed
+
 
 def app_dir() -> str:
     if getattr(sys, "frozen", False):
@@ -21,6 +23,15 @@ def index_path() -> str:
 
 
 class Api:
+    def check_license(self) -> dict:
+        return {"ok": is_licensed(), "required": True}
+
+    def activate_license(self, key: str) -> dict:
+        ok, error = activate_license(key)
+        if ok:
+            return {"ok": True}
+        return {"ok": False, "error": error}
+
     def save_backup(self, payload: str) -> dict:
         try:
             data = json.loads(payload)
@@ -29,10 +40,13 @@ class Api:
 
         try:
             window = webview.windows[0]
+            default_name = "planer-backup.planer"
+            if isinstance(data, dict) and data.get("encrypted"):
+                default_name = "planer-backup.planer"
             path = window.create_file_dialog(
                 webview.SAVE_DIALOG,
-                save_filename="planer-backup.json",
-                file_types=("JSON Files (*.json)",),
+                save_filename=default_name,
+                file_types=("Planer Backup (*.planer)", "JSON Files (*.json)"),
             )
             if not path:
                 return {"ok": False, "cancelled": True}
