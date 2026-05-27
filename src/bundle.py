@@ -8,6 +8,12 @@ css = (ROOT / "styles.css").read_text(encoding="utf-8")
 js = (ROOT / "app.js").read_text(encoding="utf-8")
 
 
+def minify_css(code: str) -> str:
+    code = re.sub(r"/\*[\s\S]*?\*/", "", code)
+    code = re.sub(r"\s+", " ", code)
+    return code.strip()
+
+
 def minify_js(code: str) -> str:
     code = re.sub(r"/\*[\s\S]*?\*/", "", code)
     lines = []
@@ -18,11 +24,12 @@ def minify_js(code: str) -> str:
     return "\n".join(lines)
 
 
+css = minify_css(css)
 js = minify_js(js)
 
 html = html.replace(
     '<link rel="stylesheet" href="styles.css" />',
-    f"<style>\n{css}\n</style>",
+    f"<style>{css}</style>",
 )
 html = html.replace(
     '<script src="app.js"></script>',

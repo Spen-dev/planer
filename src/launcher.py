@@ -1,10 +1,7 @@
-"""Desktop launcher — single Planer.exe with embedded app."""
+"""Desktop launcher — Planer.exe with embedded app."""
+import json
 import os
 import sys
-import json
-import webview
-
-from license import activate_license, is_licensed
 
 
 def app_dir() -> str:
@@ -22,17 +19,52 @@ def index_path() -> str:
     return path
 
 
+def ensure_license_interactive() -> None:
+    from license import activate_license, is_licensed
+
+    if is_licensed():
+        return
+
+    import tkinter as tk
+    from tkinter import messagebox, simpledialog
+
+    root = tk.Tk()
+    root.withdraw()
+    root.attributes("-topmost", True)
+
+    while not is_licensed():
+        key = simpledialog.askstring(
+            "Планер — активация",
+            "Введите лицензионный ключ:\nPLAN-XXXX-XXXX-XXXX-XXXX",
+            parent=root,
+        )
+        if not key:
+            root.destroy()
+            sys.exit(0)
+        ok, error = activate_license(key)
+        if not ok:
+            messagebox.showerror("Планер", error, parent=root)
+
+    root.destroy()
+
+
 class Api:
     def check_license(self) -> dict:
+        from license import is_licensed
+
         return {"ok": is_licensed(), "required": True}
 
     def activate_license(self, key: str) -> dict:
+        from license import activate_license
+
         ok, error = activate_license(key)
         if ok:
             return {"ok": True}
         return {"ok": False, "error": error}
 
     def save_backup(self, payload: str) -> dict:
+        import webview
+
         try:
             data = json.loads(payload)
         except Exception as e:
@@ -41,8 +73,6 @@ class Api:
         try:
             window = webview.windows[0]
             default_name = "planer-backup.planer"
-            if isinstance(data, dict) and data.get("encrypted"):
-                default_name = "planer-backup.planer"
             path = window.create_file_dialog(
                 webview.SAVE_DIALOG,
                 save_filename=default_name,
@@ -61,6 +91,11 @@ class Api:
 
 
 def main() -> None:
+    if getattr(sys, "frozen", False):
+        ensure_license_interactive()
+
+    import webview
+
     webview.create_window(
         "Планер",
         url=index_path(),

@@ -6,8 +6,8 @@ echo.
 echo Bundling app into one HTML file...
 python bundle.py
 echo.
-echo Building single Planer.exe...
-python -m PyInstaller --noconfirm --clean --onefile --windowed --name Planer ^
+echo Building Planer (fast onedir mode)...
+python -m PyInstaller --noconfirm --clean --onedir --windowed --name Planer ^
   --add-data "app.html;." ^
   --noupx ^
   --exclude-module numpy ^
@@ -16,16 +16,24 @@ python -m PyInstaller --noconfirm --clean --onefile --windowed --name Planer ^
   --exclude-module matplotlib ^
   --exclude-module scipy ^
   --exclude-module pytest ^
+  --exclude-module pygments ^
+  --exclude-module jinja2 ^
+  --exclude-module mako ^
+  --exclude-module pydoc ^
+  --exclude-module doctest ^
+  --exclude-module unittest ^
   --hidden-import pythonnet ^
   --hidden-import clr_loader ^
   launcher.py
-if not exist "dist\Planer.exe" (
+if not exist "dist\Planer\Planer.exe" (
   echo Build failed.
   exit /b 1
 )
-move /Y "dist\Planer.exe" "..\Planer.exe" >nul
+move /Y "dist\Planer\Planer.exe" "..\Planer.exe" >nul
+if exist "..\_internal" rmdir /s /q "..\_internal"
+move "dist\Planer\_internal" "..\_internal" >nul
 rmdir /s /q build dist 2>nul
 del /q app.html Planer.spec 2>nul
 echo.
-echo Done: ..\Planer.exe
-echo In project root there is only one file to run.
+echo Done: ..\Planer.exe + ..\_internal\
+echo Onedir build starts much faster than onefile.
