@@ -158,12 +158,55 @@ document.querySelectorAll(".tab").forEach((btn) => {
 const weekStartInput = document.getElementById("weekStart");
 const weekRangeEl = document.getElementById("weekRange");
 const daysGrid = document.getElementById("daysGrid");
+const saveBtn = document.getElementById("saveBtn");
 
 function updateWeekLabel() {
   const start = state.weekStart;
   const end = addDays(start, 6);
   weekRangeEl.textContent = `${formatDateLong(start)} — ${formatDateLong(end)}`;
   weekStartInput.value = start;
+}
+
+function backupPayload() {
+  return {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    state,
+  };
+}
+
+function downloadJson(filename, obj) {
+  const blob = new Blob([JSON.stringify(obj, null, 2)], { type: "application/json;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+async function saveBackup() {
+  const payload = backupPayload();
+  const name = `planer-backup-${state.weekStart}.json`;
+
+  // EXE (pywebview) path
+  try {
+    if (window.pywebview?.api?.save_backup) {
+      const res = await window.pywebview.api.save_backup(JSON.stringify(payload));
+      if (res?.ok) return;
+      if (res?.cancelled) return;
+      alert(res?.error || "Не удалось сохранить файл.");
+      return;
+    }
+  } catch (e) {
+    alert(String(e));
+    return;
+  }
+
+  // Browser fallback
+  downloadJson(name, payload);
 }
 
 document.getElementById("prevWeek").addEventListener("click", () => {
@@ -183,6 +226,12 @@ document.getElementById("todayWeek").addEventListener("click", () => {
   saveState();
   renderWeekly();
 });
+
+if (saveBtn) {
+  saveBtn.addEventListener("click", () => {
+    void saveBackup();
+  });
+}
 
 weekStartInput.addEventListener("change", () => {
   const picked = parseDate(weekStartInput.value);
