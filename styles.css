@@ -129,8 +129,10 @@ main {
 
 .days-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(7, minmax(220px, 1fr));
   gap: 1rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
 }
 
 .day-card {
