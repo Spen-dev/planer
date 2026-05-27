@@ -54,8 +54,9 @@ def main() -> None:
         height=800,
         min_size=(900, 600),
         text_select=True,
+        js_api=Api(),
     )
-    webview.start(gui="edgechromium", http_server=False, debug=False, private_mode=False, api=Api())
+    webview.start(gui="edgechromium", http_server=False, debug=False, private_mode=False)
 
 
 if __name__ == "__main__":
