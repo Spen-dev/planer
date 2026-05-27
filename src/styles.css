@@ -29,15 +29,20 @@ body {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: space-between;
   gap: 0.75rem;
   flex-shrink: 0;
   z-index: 10;
 }
 
-.app-header h1 {
-  margin: 0;
-  font-size: 1.35rem;
-  font-weight: 600;
+.app-brand {
+  margin-left: auto;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: rgba(67, 67, 67, 0.28);
+  letter-spacing: 0.02em;
+  user-select: none;
+  pointer-events: none;
 }
 
 .tabs {
@@ -93,7 +98,75 @@ main {
 #eisenhower {
   flex: 1;
   min-height: 0;
-  overflow: auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Eisenhower */
+.matrix-grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 0.35rem;
+}
+
+@media (max-width: 768px) {
+  .matrix-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+  }
+}
+
+.quadrant {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  padding: 0.35rem 0.45rem 0.3rem;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.quadrant h2 {
+  margin: 0 0 0.25rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid;
+  flex-shrink: 0;
+  line-height: 1.2;
+}
+
+.quadrant.q1 h2 { border-color: #ff5252; color: #c62828; }
+.quadrant.q2 h2 { border-color: #ff9100; color: #e65100; }
+.quadrant.q3 h2 { border-color: #448aff; color: #0d47a1; }
+.quadrant.q4 h2 { border-color: #78909c; color: #37474f; }
+
+.quadrant.q1 { background: linear-gradient(180deg, #ffcdd2 0%, #fff 30%); }
+.quadrant.q2 { background: linear-gradient(180deg, #ffe0b2 0%, #fff 30%); }
+.quadrant.q3 { background: linear-gradient(180deg, #bbdefb 0%, #fff 30%); }
+.quadrant.q4 { background: linear-gradient(180deg, #cfd8dc 0%, #fff 30%); }
+
+.matrix-task {
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  padding: 0.12rem 0.1rem;
+  margin-bottom: 0.06rem;
+  font-family: inherit;
+  font-size: 0.72rem;
+  line-height: 1.2;
+  background: transparent;
+  flex-shrink: 0;
+}
+
+.matrix-task:focus {
+  outline: none;
+  border-bottom-color: rgba(0, 0, 0, 0.35);
 }
 
 .panel {
@@ -307,6 +380,7 @@ main {
 
 .notes-section {
   padding: 0.3rem 0.35rem 0.35rem;
+  margin-top: 0.45rem;
 }
 
 .notes-title {
@@ -344,61 +418,6 @@ main {
 .note-row input:focus {
   outline: none;
   border-bottom-color: rgba(0, 0, 0, 0.35);
-}
-
-/* Eisenhower */
-.matrix-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-}
-
-@media (max-width: 768px) {
-  .matrix-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.quadrant {
-  background: #fff;
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  padding: 0.85rem 1rem 1rem;
-  min-height: 320px;
-}
-
-.quadrant h2 {
-  margin: 0 0 0.75rem;
-  font-size: 1rem;
-  font-weight: 600;
-  padding-bottom: 0.5rem;
-  border-bottom: 2px solid;
-}
-
-.quadrant.q1 h2 { border-color: #ff5252; color: #c62828; }
-.quadrant.q2 h2 { border-color: #ff9100; color: #e65100; }
-.quadrant.q3 h2 { border-color: #448aff; color: #0d47a1; }
-.quadrant.q4 h2 { border-color: #78909c; color: #37474f; }
-
-.quadrant.q1 { background: linear-gradient(180deg, #ffcdd2 0%, #fff 45%); }
-.quadrant.q2 { background: linear-gradient(180deg, #ffe0b2 0%, #fff 45%); }
-.quadrant.q3 { background: linear-gradient(180deg, #bbdefb 0%, #fff 45%); }
-.quadrant.q4 { background: linear-gradient(180deg, #cfd8dc 0%, #fff 45%); }
-
-.matrix-task {
-  width: 100%;
-  border: none;
-  border-bottom: 1px solid #eee;
-  padding: 0.45rem 0.25rem;
-  margin-bottom: 0.2rem;
-  font-family: inherit;
-  font-size: 0.88rem;
-  background: transparent;
-}
-
-.matrix-task:focus {
-  outline: none;
-  border-bottom-color: #bbb;
 }
 
 .overlay {
