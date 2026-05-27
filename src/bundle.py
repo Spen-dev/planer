@@ -1,11 +1,19 @@
-"""Bundle index.html, styles.css and app.js into a single app.html for the EXE."""
+"""Bundle index.html, styles.css and js/*.js into a single app.html for the EXE."""
 import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 html = (ROOT / "index.html").read_text(encoding="utf-8")
 css = (ROOT / "styles.css").read_text(encoding="utf-8")
-js = (ROOT / "app.js").read_text(encoding="utf-8")
+
+js_files = [
+    ROOT / "js" / "core.js",
+    ROOT / "js" / "weekly.js",
+    ROOT / "js" / "matrix.js",
+    ROOT / "js" / "settings.js",
+    ROOT / "js" / "app.js",
+]
+js = "\n".join(path.read_text(encoding="utf-8") for path in js_files)
 
 
 def minify_css(code: str) -> str:
@@ -26,15 +34,16 @@ def minify_js(code: str) -> str:
 
 css = minify_css(css)
 js = minify_js(js)
+js = "window.__PLANER_DESKTOP__=true;\n" + js
 
 html = html.replace(
     '<link rel="stylesheet" href="styles.css" />',
     f"<style>{css}</style>",
 )
-html = html.replace(
-    '<script src="app.js"></script>',
-    f"<script>\n{js}\n</script>",
-)
+for path in js_files:
+    tag = f'<script src="{path.relative_to(ROOT).as_posix()}"></script>'
+    html = html.replace(tag, "")
+html = html.replace("</body>", f"<script>\n{js}\n</script>\n</body>")
 
 (ROOT / "app.html").write_text(html, encoding="utf-8")
 print("Created app.html")

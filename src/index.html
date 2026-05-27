@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" data-theme="light">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -12,30 +12,47 @@
       <button type="button" class="tab active" data-tab="weekly" role="tab" aria-selected="true">Недельный</button>
       <button type="button" class="tab" data-tab="eisenhower" role="tab" aria-selected="false">Матрица Эйзенхауэра</button>
     </nav>
-    <span class="app-brand" aria-hidden="true">Spen-Dev(C)</span>
+    <div class="header-actions">
+      <button type="button" id="printBtn" class="btn-icon" title="Печать недели" aria-label="Печать недели">
+        <svg class="btn-icon-svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path fill="currentColor" d="M19 8H5a3 3 0 0 0-3 3v6h4v4h12v-4h4v-6a3 3 0 0 0-3-3Zm-1 10H6v-4h12v4Zm1-8a1 1 0 1 1 0-2 1 1 0 0 1 0 2ZM7 3h10v4H7V3Z"/>
+        </svg>
+      </button>
+      <button type="button" id="searchBtn" class="btn-icon" title="Поиск (Ctrl+F)" aria-label="Поиск">🔍</button>
+      <button type="button" id="securityBtn" class="btn-icon" title="Безопасность — смена пароля" aria-label="Безопасность">🔒</button>
+      <button type="button" id="settingsBtn" class="btn-icon" title="Настройки" aria-label="Настройки">⚙</button>
+      <span class="app-brand" aria-hidden="true">Spen-Dev(C)</span>
+    </div>
   </header>
 
   <main>
     <section id="weekly" class="panel active" role="tabpanel">
       <div class="week-layout">
         <div class="week-toolbar">
-          <button type="button" id="todayWeek" class="btn-secondary">Сегодня</button>
-          <button type="button" id="saveBtn" class="btn-secondary">Сохранить</button>
-          <button type="button" id="prevWeek" class="btn-icon" title="Предыдущая неделя">←</button>
+          <button type="button" id="todayWeek" class="btn-secondary" title="Сегодня (T)">Сегодня</button>
+          <button type="button" id="copyWeekBtn" class="btn-secondary" title="Копировать неделю на следующую">Копировать →</button>
+          <button type="button" id="loadBtn" class="btn-secondary" title="Восстановить из файла">Открыть</button>
+          <button type="button" id="saveBtn" class="btn-secondary" title="Сохранить бэкап (Ctrl+S)">Сохранить</button>
+          <span id="saveStatus" class="save-status" aria-live="polite"></span>
+          <button type="button" id="prevWeek" class="btn-icon" title="Предыдущая неделя (←)">←</button>
           <div class="week-label">
             <span id="weekRange"></span>
             <input type="date" id="weekStart" aria-label="Начало недели (понедельник)" />
           </div>
-          <button type="button" id="nextWeek" class="btn-icon" title="Следующая неделя">→</button>
+          <button type="button" id="nextWeek" class="btn-icon" title="Следующая неделя (→)">→</button>
         </div>
         <div id="daysGrid" class="days-grid"></div>
       </div>
     </section>
 
     <section id="eisenhower" class="panel" role="tabpanel" hidden>
-      <div id="matrixGrid" class="matrix-grid"></div>
+      <div class="matrix-layout">
+        <div id="matrixGrid" class="matrix-grid"></div>
+      </div>
     </section>
   </main>
+
+  <div class="app-bottom-gap" aria-hidden="true"></div>
 
   <div id="licenseOverlay" class="overlay" hidden>
     <div class="overlay-card">
@@ -44,6 +61,107 @@
       <input type="text" id="licenseKey" placeholder="PLAN-XXXX-XXXX-XXXX-XXXX" autocomplete="off" />
       <p id="licenseError" class="overlay-error" hidden></p>
       <button type="button" id="licenseActivate" class="btn-secondary">Активировать</button>
+    </div>
+  </div>
+
+  <div id="searchOverlay" class="overlay" hidden>
+    <div class="overlay-card search-card">
+      <h2>Поиск</h2>
+      <input type="search" id="searchInput" placeholder="Задачи и заметки…" autocomplete="off" />
+      <div id="searchResults" class="search-results"></div>
+      <button type="button" id="searchCloseBtn" class="btn-secondary">Закрыть</button>
+    </div>
+  </div>
+
+  <div id="transferOverlay" class="overlay" hidden>
+    <div class="overlay-card">
+      <h2>Добавить в день</h2>
+      <p id="transferTaskText" class="transfer-preview"></p>
+      <div id="transferDayButtons" class="transfer-days"></div>
+      <button type="button" id="transferCancelBtn" class="btn-secondary">Отмена</button>
+    </div>
+  </div>
+
+  <div id="settingsOverlay" class="overlay" hidden>
+    <div class="overlay-card settings-card">
+      <h2>Настройки</h2>
+      <div class="settings-scroll">
+        <label class="settings-field">
+          <span>Тема</span>
+          <select id="themeSelect">
+            <option value="light">Светлая</option>
+            <option value="dark">Тёмная</option>
+          </select>
+        </label>
+        <label class="settings-field">
+          <span>Цвет текста интерфейса</span>
+          <div class="font-color-row">
+            <input type="color" id="fontColor" aria-label="Цвет текста интерфейса" />
+            <button type="button" id="resetFontColorBtn" class="btn-link">По умолчанию</button>
+          </div>
+        </label>
+        <label class="settings-field">
+          <span>Палитра колонок</span>
+          <select id="colorPreset">
+            <option value="default">Стандартная</option>
+            <option value="pastel">Пастель</option>
+            <option value="vivid">Яркая</option>
+            <option value="ocean">Морская</option>
+            <option value="mono">Монохром</option>
+            <option value="custom">Своя</option>
+          </select>
+        </label>
+        <div class="settings-colors-title">Цвет каждой колонки <span class="settings-colors-hint">фон · текст</span></div>
+        <div id="dayColorPickers" class="color-pickers"></div>
+
+        <div class="settings-section-title">Система</div>
+        <label class="settings-field settings-check">
+          <input type="checkbox" id="autostartCheck" />
+          <span>Запускать с Windows</span>
+        </label>
+
+        <div class="settings-section-title">О программе</div>
+        <div class="about-block">
+          <div><strong>Планер</strong> <span id="aboutVersion">—</span></div>
+          <div class="about-muted">Данные: <span id="aboutDataDir">—</span></div>
+        </div>
+      </div>
+      <div class="settings-actions">
+        <button type="button" id="resetColorsBtn" class="btn-secondary">Сбросить цвета</button>
+        <button type="button" id="settingsCloseBtn" class="btn-secondary">Закрыть</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="securityOverlay" class="overlay" hidden>
+    <div class="overlay-card security-card">
+      <h2>Безопасность</h2>
+      <div class="settings-block security-section">
+        <div class="settings-block-title">Пароль</div>
+        <p class="overlay-hint">Смена пароля шифрования данных на этом компьютере.</p>
+        <label class="settings-field">
+          <span>Текущий пароль</span>
+          <input type="password" id="oldPassword" autocomplete="off" />
+        </label>
+        <label class="settings-field">
+          <span>Новый пароль</span>
+          <input type="password" id="newPassword" autocomplete="off" />
+        </label>
+        <label class="settings-field">
+          <span>Повтор нового пароля</span>
+          <input type="password" id="newPasswordConfirm" autocomplete="off" />
+        </label>
+        <p id="passwordChangeError" class="overlay-error" hidden></p>
+        <button type="button" id="changePasswordBtn" class="btn-secondary settings-inline-btn">Сменить пароль</button>
+      </div>
+      <div class="settings-block security-section">
+        <div class="settings-block-title">Лицензия</div>
+        <a id="aboutEula" href="#" class="about-link">Лицензионное соглашение (EULA)</a>
+        <button type="button" id="clearLicenseBtn" class="btn-secondary settings-inline-btn">Сбросить лицензию (потребуется ключ при следующем запуске)</button>
+      </div>
+      <div class="overlay-actions">
+        <button type="button" id="securityCloseBtn" class="btn-secondary">Закрыть</button>
+      </div>
     </div>
   </div>
 
@@ -62,6 +180,10 @@
     </div>
   </div>
 
-  <script src="app.js"></script>
+  <script src="js/core.js"></script>
+  <script src="js/weekly.js"></script>
+  <script src="js/matrix.js"></script>
+  <script src="js/settings.js"></script>
+  <script src="js/app.js"></script>
 </body>
 </html>

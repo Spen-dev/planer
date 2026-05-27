@@ -17,6 +17,7 @@ LICENSE_FILE = LICENSE_DIR / "license.dat"
 KEY_PATTERN = re.compile(
     r"^PLAN-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}$"
 )
+TOKEN_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 
 
 def normalize_key(key: str) -> str:
@@ -48,13 +49,17 @@ def license_token(key: str) -> str:
     return hashlib.sha256(normalized.encode("utf-8") + LICENSE_SECRET).hexdigest()
 
 
+def is_valid_token(token: str) -> bool:
+    return bool(token and TOKEN_PATTERN.match(token))
+
+
 def is_licensed() -> bool:
     if not LICENSE_FILE.is_file():
         return False
     try:
         data = json.loads(LICENSE_FILE.read_text(encoding="utf-8"))
-        return bool(data.get("token"))
-    except OSError:
+        return is_valid_token(str(data.get("token", "")))
+    except (OSError, json.JSONDecodeError):
         return False
 
 
@@ -71,3 +76,8 @@ def activate_license(key: str) -> tuple[bool, str]:
         return False, "Неверный лицензионный ключ."
     save_license(key)
     return True, ""
+
+
+def clear_license() -> None:
+    if LICENSE_FILE.is_file():
+        LICENSE_FILE.unlink()

@@ -7,5 +7,7 @@ src/build/
 src/dist/
 src/*.spec
 src/app.html
+_internal/
+debug-*.log
 __pycache__/
 src/__pycache__/
