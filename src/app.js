@@ -7,13 +7,13 @@ const NOTES_PER_DAY = 4;
 const MATRIX_TASKS = 14;
 
 const DAY_THEMES = [
-  { name: "Пн", bg: "#FCEEE0", accent: "#F6C99E", light: "#FEF6EF" },
-  { name: "Вт", bg: "#FEE3DE", accent: "#FDB4A6", light: "#FFF1EE" },
-  { name: "Ср", bg: "#FAE2E3", accent: "#F1ABAE", light: "#FDF0F1" },
-  { name: "Чт", bg: "#F3E9F0", accent: "#E1CADB", light: "#F9F4F8" },
-  { name: "Пт", bg: "#C0DADE", accent: "#8BB4BE", light: "#F4F8F9" },
-  { name: "Сб", bg: "#E7F5EA", accent: "#C7E6CE", light: "#F3FAF5" },
-  { name: "Вс", bg: "#F9F6E3", accent: "#E6DC8E", light: "#FCFBF1" },
+  { name: "Пн", bg: "#FFD699", accent: "#F7931E", light: "#FFF0CC" },
+  { name: "Вт", bg: "#FFB4A8", accent: "#FF5722", light: "#FFDED8" },
+  { name: "Ср", bg: "#FFA8B8", accent: "#E91E63", light: "#FFD6E0" },
+  { name: "Чт", bg: "#CEA8E0", accent: "#9C27B0", light: "#EAD4F2" },
+  { name: "Пт", bg: "#7DD3E3", accent: "#0097A7", light: "#C2EEF5" },
+  { name: "Сб", bg: "#8FE8A8", accent: "#43A047", light: "#D4F5DC" },
+  { name: "Вс", bg: "#FFE97A", accent: "#FBC02D", light: "#FFF6C2" },
 ];
 
 const QUADRANTS = [
@@ -511,7 +511,7 @@ function renderWeekly() {
         </div>
         <div class="progress-value" style="color:${theme.accent}">${totalLabel(stats)}</div>
       </div>
-      <div class="tasks-section" style="background:${theme.bg}22">
+      <div class="tasks-section" style="background:${theme.light}">
         <div class="tasks-title">Задачи</div>
         <div class="tasks-list" data-day="${i}"></div>
       </div>
@@ -519,7 +519,7 @@ function renderWeekly() {
         <div class="stat-item"><span style="color:${theme.accent}">Завершено</span><strong>${stats.completed}</strong></div>
         <div class="stat-item"><span style="color:${theme.accent}">Невыполнено</span><strong>${stats.notDone}</strong></div>
       </div>
-      <div class="notes-section" style="background:${theme.bg}44">
+      <div class="notes-section" style="background:${theme.bg}88">
         <div class="notes-title">Заметки</div>
         <div class="notes-list" data-day="${i}"></div>
       </div>

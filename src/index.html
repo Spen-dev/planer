@@ -19,14 +19,14 @@
     <section id="weekly" class="panel active" role="tabpanel">
       <div class="week-layout">
         <div class="week-toolbar">
+          <button type="button" id="todayWeek" class="btn-secondary">Сегодня</button>
+          <button type="button" id="saveBtn" class="btn-secondary">Сохранить</button>
           <button type="button" id="prevWeek" class="btn-icon" title="Предыдущая неделя">←</button>
           <div class="week-label">
             <span id="weekRange"></span>
             <input type="date" id="weekStart" aria-label="Начало недели (понедельник)" />
           </div>
           <button type="button" id="nextWeek" class="btn-icon" title="Следующая неделя">→</button>
-          <button type="button" id="todayWeek" class="btn-secondary">Сегодня</button>
-          <button type="button" id="saveBtn" class="btn-secondary">Сохранить</button>
         </div>
         <div id="daysGrid" class="days-grid"></div>
       </div>
