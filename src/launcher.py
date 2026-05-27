@@ -71,8 +71,8 @@ def main() -> None:
         "Планер",
         url=index_url(),
         width=1280,
-        height=800,
-        min_size=(900, 600),
+        height=720,
+        min_size=(900, 650),
         text_select=True,
         js_api=Api(),
     )

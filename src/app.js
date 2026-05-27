@@ -386,6 +386,8 @@ document.querySelectorAll(".tab").forEach((btn) => {
       p.classList.toggle("active", active);
       p.hidden = !active;
     });
+    document.body.classList.toggle("view-weekly", tab === "weekly");
+    document.body.classList.toggle("view-matrix", tab === "eisenhower");
     if (tab === "eisenhower" && !matrixReady) {
       renderMatrix();
       matrixReady = true;
