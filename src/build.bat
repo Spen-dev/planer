@@ -1,7 +1,7 @@
 @echo off
 cd /d "%~dp0"
 echo Installing build dependencies...
-python -m pip install -q pywebview pyinstaller
+python -m pip install -q pywebview pythonnet pyinstaller
 echo.
 echo Bundling app into one HTML file...
 python bundle.py
@@ -16,9 +16,8 @@ python -m PyInstaller --noconfirm --clean --onefile --windowed --name Planer ^
   --exclude-module matplotlib ^
   --exclude-module scipy ^
   --exclude-module pytest ^
-  --exclude-module pythonnet ^
-  --exclude-module clr ^
-  --exclude-module clr_loader ^
+  --hidden-import pythonnet ^
+  --hidden-import clr_loader ^
   launcher.py
 if not exist "dist\Planer.exe" (
   echo Build failed.
