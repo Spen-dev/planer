@@ -63,6 +63,15 @@ class Api:
         except Exception as e:
             return {"ok": False, "error": str(e)}
 
+    def resize_window(self, width: int, height: int) -> dict:
+        import webview
+
+        try:
+            webview.windows[0].resize(int(width), int(height))
+            return {"ok": True}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
 
 def main() -> None:
     import webview

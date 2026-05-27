@@ -365,11 +365,40 @@ async function ensurePassword() {
   await showPasswordOverlay("unlock");
 }
 
+const MATRIX_WINDOW = { width: 1280, height: 720 };
+const MIN_WEEKLY_HEIGHT = 650;
+
+async function resizeAppWindow(width, height) {
+  const api = window.pywebview?.api;
+  if (!api?.resize_window) return;
+  try {
+    await api.resize_window(width, height);
+  } catch (_) {
+    /* not in desktop shell */
+  }
+}
+
+function fitWeeklyWindow() {
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      const width = window.outerWidth || window.innerWidth || 1280;
+      const chrome = Math.max(window.outerHeight - window.innerHeight, 0);
+      const height = Math.ceil(document.documentElement.scrollHeight) + chrome;
+      void resizeAppWindow(width, Math.max(height, MIN_WEEKLY_HEIGHT));
+    });
+  });
+}
+
+function fitMatrixWindow() {
+  void resizeAppWindow(MATRIX_WINDOW.width, MATRIX_WINDOW.height);
+}
+
 async function bootApp() {
   if (!(await ensureLicense())) return;
   await ensurePassword();
   state = await loadState();
   renderWeekly();
+  fitWeeklyWindow();
 }
 
 document.querySelectorAll(".tab").forEach((btn) => {
@@ -388,9 +417,14 @@ document.querySelectorAll(".tab").forEach((btn) => {
     });
     document.body.classList.toggle("view-weekly", tab === "weekly");
     document.body.classList.toggle("view-matrix", tab === "eisenhower");
-    if (tab === "eisenhower" && !matrixReady) {
-      renderMatrix();
-      matrixReady = true;
+    if (tab === "eisenhower") {
+      if (!matrixReady) {
+        renderMatrix();
+        matrixReady = true;
+      }
+      fitMatrixWindow();
+    } else {
+      fitWeeklyWindow();
     }
   });
 });
@@ -553,6 +587,7 @@ function renderWeekly() {
   }
 
   bindWeeklyEvents();
+  fitWeeklyWindow();
 }
 
 function totalLabel(stats) {

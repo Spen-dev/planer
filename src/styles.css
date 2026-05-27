@@ -35,14 +35,6 @@ body {
   z-index: 10;
 }
 
-.app-title {
-  margin: 0;
-  font-size: 1.85rem;
-  font-weight: 700;
-  line-height: 1;
-  flex-shrink: 0;
-}
-
 .app-brand {
   margin-left: auto;
   font-size: 0.9rem;
@@ -88,10 +80,14 @@ main {
   flex-direction: column;
 }
 
+html:has(body.view-weekly) {
+  height: auto;
+}
+
 body.view-weekly {
   height: auto;
   min-height: 0;
-  overflow: auto;
+  overflow: hidden;
 }
 
 body.view-matrix {
@@ -108,6 +104,7 @@ body.view-matrix main {
 body.view-weekly main {
   flex: 0 1 auto;
   overflow: visible;
+  padding-bottom: 0.25rem;
 }
 
 #weekly {
