@@ -11,6 +11,7 @@
     <nav class="tabs" role="tablist">
       <button type="button" class="tab active" data-tab="weekly" role="tab" aria-selected="true">Недельный</button>
       <button type="button" class="tab" data-tab="eisenhower" role="tab" aria-selected="false">Матрица Эйзенхауэра</button>
+      <button type="button" class="tab" data-tab="stats" role="tab" aria-selected="false">Недельная статистика</button>
     </nav>
     <div class="header-actions">
       <button type="button" id="printBtn" class="btn-icon" title="Печать недели" aria-label="Печать недели">
@@ -48,6 +49,19 @@
     <section id="eisenhower" class="panel" role="tabpanel" hidden>
       <div class="matrix-layout">
         <div id="matrixGrid" class="matrix-grid"></div>
+      </div>
+    </section>
+
+    <section id="stats" class="panel" role="tabpanel" hidden>
+      <div class="stats-layout">
+        <div class="stats-toolbar">
+          <button type="button" id="statsTodayWeek" class="btn-secondary" title="Сегодня">Сегодня</button>
+          <button type="button" id="statsPrevWeek" class="btn-icon" title="Предыдущая неделя">←</button>
+          <div class="stats-week-label" id="statsWeekRange"></div>
+          <button type="button" id="statsNextWeek" class="btn-icon" title="Следующая неделя">→</button>
+        </div>
+        <div id="statsSummary" class="stats-summary"></div>
+        <div id="statsCharts" class="stats-charts"></div>
       </div>
     </section>
   </main>
@@ -157,7 +171,7 @@
       <div class="settings-block security-section">
         <div class="settings-block-title">Лицензия</div>
         <a id="aboutEula" href="#" class="about-link">Лицензионное соглашение (EULA)</a>
-        <button type="button" id="clearLicenseBtn" class="btn-secondary settings-inline-btn">Сбросить лицензию (потребуется ключ при следующем запуске)</button>
+        <button type="button" id="clearLicenseBtn" class="btn-secondary settings-inline-btn" title="Потребуется ключ при следующем запуске">Сбросить лицензию</button>
       </div>
       <div class="overlay-actions">
         <button type="button" id="securityCloseBtn" class="btn-secondary">Закрыть</button>
@@ -183,6 +197,7 @@
   <script src="js/core.js"></script>
   <script src="js/weekly.js"></script>
   <script src="js/matrix.js"></script>
+  <script src="js/stats.js"></script>
   <script src="js/settings.js"></script>
   <script src="js/protect.js"></script>
   <script src="js/app.js"></script>

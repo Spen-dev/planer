@@ -12,6 +12,7 @@ js_files = [
     ROOT / "js" / "core.js",
     ROOT / "js" / "weekly.js",
     ROOT / "js" / "matrix.js",
+    ROOT / "js" / "stats.js",
     ROOT / "js" / "settings.js",
     ROOT / "js" / "protect.js",
     ROOT / "js" / "app.js",

@@ -67,6 +67,7 @@ const MONTHS = [
 const WEEKLY_CLIENT_WIDTH = 1280;
 const MIN_WEEKLY_HEIGHT = 420;
 const MIN_MATRIX_HEIGHT = 420;
+const MIN_STATS_HEIGHT = 480;
 /** Bottom gap under content (~0.6 cm at 96 dpi). */
 const VIEW_BOTTOM_GAP_PX = 23;
 /** Fixed layout metrics (px) — same window size on every PC. */
@@ -91,10 +92,22 @@ const MATRIX_LAYOUT = {
   header: 76,
   mainPadY: 8,
   gridGap: 6,
-  quadrantHead: 42,
+  quadrantHead: 46,
   matrixRow: 28,
+  quadrantStats: 30,
   quadrantPadY: 11,
   quadrantFixed: null,
+  bottomGap: 23,
+};
+
+const STATS_LAYOUT = {
+  header: 76,
+  mainPadY: 8,
+  toolbar: 36,
+  layoutGap: 8,
+  summary: 64,
+  chart: 168,
+  chartGap: 12,
   bottomGap: 23,
 };
 
@@ -143,6 +156,22 @@ function measureMatrixClientHeight() {
   );
 }
 
+function fixedStatsClientHeight() {
+  const L = STATS_LAYOUT;
+  const charts = 2 * L.chart + L.chartGap;
+  const layout = L.toolbar + L.layoutGap + L.summary + L.layoutGap + charts;
+  return Math.max(MIN_STATS_HEIGHT, Math.ceil(L.header + L.mainPadY + layout + VIEW_BOTTOM_GAP_PX));
+}
+
+function measureStatsClientHeight() {
+  return measureAppClientHeight(
+    ".stats-layout",
+    "statsCharts",
+    fixedStatsClientHeight,
+    MIN_STATS_HEIGHT,
+  );
+}
+
 function getWeeklyRowCounts() {
   const week = getWeek(state.weekStart);
   let maxTasks = INITIAL_TASK_ROWS;
@@ -171,7 +200,7 @@ function fixedMatrixClientHeight(maxRows) {
   const L = MATRIX_LAYOUT;
   const quadrant = L.quadrantFixed != null
     ? L.quadrantFixed + maxRows * L.matrixRow
-    : L.quadrantHead + maxRows * L.matrixRow + L.quadrantPadY;
+    : L.quadrantHead + maxRows * L.matrixRow + L.quadrantStats + L.quadrantPadY;
   const grid = quadrant + L.gridGap + quadrant;
   return Math.max(MIN_MATRIX_HEIGHT, Math.ceil(L.header + L.mainPadY + grid + VIEW_BOTTOM_GAP_PX));
 }
@@ -189,6 +218,7 @@ let weeklyEventsReady = false;
 let matrixEventsReady = false;
 let matrixReady = false;
 let pendingTransfer = null;
+let pendingTransferMeta = null;
 
 function clampByte(n) {
   return Math.max(0, Math.min(255, Math.round(n)));
@@ -345,8 +375,39 @@ function defaultMatrixRowCounts() {
 
 function defaultMatrix() {
   const matrix = {};
-  for (const q of QUADRANTS) matrix[q.id] = Array.from({ length: MATRIX_TASKS }, () => "");
+  for (const q of QUADRANTS) matrix[q.id] = Array.from({ length: MATRIX_TASKS }, () => defaultMatrixTask());
   return matrix;
+}
+
+function defaultMatrixTask() {
+  return { text: "", done: false };
+}
+
+function normalizeMatrixTask(task) {
+  if (task && typeof task === "object" && "text" in task) {
+    return { text: String(task.text || ""), done: Boolean(task.done) };
+  }
+  return { text: String(task || ""), done: false };
+}
+
+function getMatrixTaskText(task) {
+  return normalizeMatrixTask(task).text;
+}
+
+function defaultMatrixTransferred() {
+  const transferred = {};
+  for (const q of QUADRANTS) {
+    transferred[q.id] = Array.from({ length: MATRIX_TASKS }, () => false);
+  }
+  return transferred;
+}
+
+function defaultMatrixLinks() {
+  const links = {};
+  for (const q of QUADRANTS) {
+    links[q.id] = Array.from({ length: MATRIX_TASKS }, () => null);
+  }
+  return links;
 }
 
 function defaultAppearance() {
@@ -364,6 +425,8 @@ function defaultState() {
     weeks: {},
     matrix: defaultMatrix(),
     matrixRowCounts: defaultMatrixRowCounts(),
+    matrixTransferred: defaultMatrixTransferred(),
+    matrixLinks: defaultMatrixLinks(),
     appearance: defaultAppearance(),
   };
 }
@@ -423,6 +486,14 @@ function parsePlainState(raw) {
     matrixRowCounts: {
       ...defaultMatrixRowCounts(),
       ...parsed.matrixRowCounts,
+    },
+    matrixTransferred: {
+      ...defaultMatrixTransferred(),
+      ...parsed.matrixTransferred,
+    },
+    matrixLinks: {
+      ...defaultMatrixLinks(),
+      ...parsed.matrixLinks,
     },
     appearance: {
       ...defaultAppearance(),
@@ -544,11 +615,26 @@ function getWeek(weekStart) {
 
 function ensureMatrixState() {
   if (!state.matrixRowCounts) state.matrixRowCounts = defaultMatrixRowCounts();
+  if (!state.matrixTransferred) state.matrixTransferred = defaultMatrixTransferred();
+  if (!state.matrixLinks) state.matrixLinks = defaultMatrixLinks();
   for (const q of QUADRANTS) {
     if (!state.matrix[q.id]) state.matrix[q.id] = defaultMatrix()[q.id];
-    while (state.matrix[q.id].length < MATRIX_TASKS) state.matrix[q.id].push("");
+    if (!state.matrixTransferred[q.id]) {
+      state.matrixTransferred[q.id] = Array.from({ length: MATRIX_TASKS }, () => false);
+    }
+    if (!state.matrixLinks[q.id]) {
+      state.matrixLinks[q.id] = Array.from({ length: MATRIX_TASKS }, () => null);
+    }
+    while (state.matrix[q.id].length < MATRIX_TASKS) state.matrix[q.id].push(defaultMatrixTask());
+    while (state.matrixTransferred[q.id].length < MATRIX_TASKS) {
+      state.matrixTransferred[q.id].push(false);
+    }
+    while (state.matrixLinks[q.id].length < MATRIX_TASKS) {
+      state.matrixLinks[q.id].push(null);
+    }
+    state.matrix[q.id] = state.matrix[q.id].map(normalizeMatrixTask);
     let lastUsed = -1;
-    state.matrix[q.id].forEach((text, i) => { if (text.trim()) lastUsed = i; });
+    state.matrix[q.id].forEach((task, i) => { if (getMatrixTaskText(task).trim()) lastUsed = i; });
     const stored = state.matrixRowCounts[q.id];
     state.matrixRowCounts[q.id] = Math.min(
       MATRIX_TASKS,
@@ -560,6 +646,26 @@ function ensureMatrixState() {
 function getMatrixRowCount(quadrantId) {
   ensureMatrixState();
   return state.matrixRowCounts[quadrantId] || INITIAL_MATRIX_ROWS;
+}
+
+function calcMatrixQuadrantStats(quadrantId) {
+  ensureMatrixState();
+  const rowCount = getMatrixRowCount(quadrantId);
+  const tasks = state.matrix[quadrantId] || [];
+  let completed = 0;
+  let total = 0;
+  for (let i = 0; i < rowCount; i += 1) {
+    const task = normalizeMatrixTask(tasks[i]);
+    if (!task.text.trim()) continue;
+    total += 1;
+    if (task.done) completed += 1;
+  }
+  return {
+    total,
+    completed,
+    notDone: Math.max(0, total - completed),
+    progress: total > 0 ? completed / total : 0,
+  };
 }
 
 function calcDayStats(day) {
@@ -659,16 +765,52 @@ function calibrateMatrixLayoutMetrics() {
 
   const head = quadrant.querySelector(".quadrant-head");
   const matrixRow = quadrant.querySelector(".matrix-row");
+  const statsBlock = quadrant.querySelector(".matrix-stats");
   if (head) MATRIX_LAYOUT.quadrantHead = Math.ceil(head.getBoundingClientRect().height);
   if (matrixRow) MATRIX_LAYOUT.matrixRow = Math.ceil(matrixRow.getBoundingClientRect().height);
+  if (statsBlock) {
+    MATRIX_LAYOUT.quadrantStats = Math.ceil(statsBlock.getBoundingClientRect().height);
+  }
 
   const quadrantStyle = getComputedStyle(quadrant);
   MATRIX_LAYOUT.quadrantPadY = (parseFloat(quadrantStyle.paddingTop) || 0)
     + (parseFloat(quadrantStyle.paddingBottom) || 0);
 
   const quadrantHeight = quadrant.getBoundingClientRect().height;
-  MATRIX_LAYOUT.quadrantFixed = Math.ceil(quadrantHeight - maxRows * MATRIX_LAYOUT.matrixRow);
+  MATRIX_LAYOUT.quadrantFixed = Math.ceil(
+    quadrantHeight - maxRows * MATRIX_LAYOUT.matrixRow - (MATRIX_LAYOUT.quadrantStats || 0),
+  );
   window.__matrixLayoutCalibrated = true;
+}
+
+function calibrateStatsLayoutMetrics() {
+  if (window.__statsLayoutCalibrated) return;
+  const charts = document.getElementById("statsCharts");
+  if (!charts?.children.length) return;
+
+  const header = document.querySelector(".app-header");
+  const main = document.querySelector("main");
+  const statsLayout = document.querySelector(".stats-layout");
+  const toolbar = document.querySelector(".stats-toolbar");
+  const summary = document.getElementById("statsSummary");
+  const chart = charts.querySelector(".stats-chart");
+
+  if (header) STATS_LAYOUT.header = Math.ceil(header.getBoundingClientRect().height);
+  if (main) {
+    STATS_LAYOUT.mainPadY = parseFloat(getComputedStyle(main).paddingTop) || 0;
+  }
+  if (statsLayout) {
+    STATS_LAYOUT.layoutGap = parseFloat(getComputedStyle(statsLayout).rowGap
+      || getComputedStyle(statsLayout).gap) || 0;
+  }
+  if (toolbar) STATS_LAYOUT.toolbar = Math.ceil(toolbar.getBoundingClientRect().height);
+  if (summary) STATS_LAYOUT.summary = Math.ceil(summary.getBoundingClientRect().height);
+  if (chart) STATS_LAYOUT.chart = Math.ceil(chart.getBoundingClientRect().height);
+  if (charts.children.length > 1) {
+    STATS_LAYOUT.chartGap = parseFloat(getComputedStyle(charts).rowGap
+      || getComputedStyle(charts).gap) || 0;
+  }
+  window.__statsLayoutCalibrated = true;
 }
 
 function getWeeklyWindowWidth() {
@@ -809,6 +951,7 @@ function setupWeeklyWindowListeners() {
       refitTimer = setTimeout(() => {
         if (document.body.classList.contains("view-weekly")) restoreWeeklyWindow();
         else if (document.body.classList.contains("view-matrix")) restoreMatrixWindow();
+        else if (document.body.classList.contains("view-stats")) restoreStatsWindow();
       }, 400);
     }
     wasMaximized = maximized;
@@ -848,6 +991,33 @@ function restoreMatrixWindow() {
 
 function fitMatrixWindow() {
   restoreMatrixWindow();
+}
+
+function applyStatsWindowSize(force = false) {
+  calibrateStatsLayoutMetrics();
+  const width = WEEKLY_CLIENT_WIDTH;
+  const height = measureStatsClientHeight();
+  const sizeKey = `${width}|${height}`;
+  if (!force && cachedWeeklySize?.key === sizeKey) return;
+  cachedWeeklySize = { width, height, key: sizeKey };
+  resizeAppWindow(width, height);
+}
+
+function restoreStatsWindow() {
+  if (!document.body.classList.contains("view-stats")) return;
+  if (shouldPauseWeeklyAutoResize()) return;
+  cachedWeeklySize = null;
+  window.__statsLayoutCalibrated = false;
+  const refit = () => {
+    if (shouldPauseWeeklyAutoResize()) return;
+    applyStatsWindowSize(true);
+  };
+  requestAnimationFrame(() => requestAnimationFrame(refit));
+  setTimeout(refit, 150);
+}
+
+function fitStatsWindow() {
+  restoreStatsWindow();
 }
 
 function totalLabel(stats) {

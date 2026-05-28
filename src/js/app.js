@@ -184,6 +184,7 @@ async function bootApp() {
   initSettings();
   setupWeeklyEvents();
   setupMatrixEvents();
+  setupStatsEvents();
   setupWeeklyToolbar();
   setupSearch();
   setupTabs();

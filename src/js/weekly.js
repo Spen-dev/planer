@@ -123,6 +123,7 @@ function refreshDayStats(dayIdx) {
   const statItems = card.querySelectorAll(".stat-item strong");
   statItems[0].textContent = stats.completed;
   statItems[1].textContent = stats.notDone;
+  maybeRefreshStatsTab();
 }
 
 function addDayTaskRow(dayIdx) {
@@ -138,6 +139,7 @@ function removeDayTaskRow(dayIdx) {
   const day = getWeek(state.weekStart).days[dayIdx];
   if (day.taskRows <= INITIAL_TASK_ROWS) return;
   const lastIdx = day.taskRows - 1;
+  restoreMatrixForWeeklyTask(state.weekStart, dayIdx, lastIdx);
   day.tasks[lastIdx] = { text: "", done: false };
   day.taskRows -= 1;
   renderWeekly(true);
@@ -186,6 +188,7 @@ function moveTask(fromDay, fromTask, toDay, toTask) {
   if (!dst.text.trim() && !dst.done) {
     week.days[toDay].tasks[toTask] = { ...src };
     week.days[fromDay].tasks[fromTask] = { text: "", done: false };
+    restoreMatrixForWeeklyTask(state.weekStart, fromDay, fromTask);
   } else {
     week.days[fromDay].tasks[fromTask] = { ...dst };
     week.days[toDay].tasks[toTask] = { ...src };
@@ -196,14 +199,14 @@ function moveTask(fromDay, fromTask, toDay, toTask) {
 
 function addTaskToDay(dayIdx, text) {
   const trimmed = text.trim();
-  if (!trimmed) return false;
+  if (!trimmed) return -1;
   const day = getWeek(state.weekStart).days[dayIdx];
   const slot = firstEmptyTaskSlot(day);
-  if (slot < 0) return false;
+  if (slot < 0) return -1;
   day.tasks[slot] = { text: trimmed, done: false };
   renderWeekly();
   scheduleSave();
-  return true;
+  return slot;
 }
 
 function copyWeekToNext() {
@@ -234,6 +237,7 @@ function updateWeekLabel() {
   const start = state.weekStart;
   weekRangeEl.textContent = `${formatDateLong(start)} — ${formatDateLong(addDays(start, 6))}`;
   weekStartInput.value = start;
+  maybeRefreshStatsTab();
 }
 
 function setupWeeklyEvents() {
@@ -265,6 +269,7 @@ function setupWeeklyEvents() {
     getWeek(state.weekStart).days[dayIdx].tasks[taskIdx].done = el.checked;
     el.closest(".task-row")?.classList.toggle("done", el.checked);
     refreshDayStats(dayIdx);
+    syncMatrixForWeeklyTask(state.weekStart, dayIdx, taskIdx);
     scheduleSave();
   });
 
@@ -277,6 +282,11 @@ function setupWeeklyEvents() {
     if (el.dataset.task !== undefined) {
       const taskIdx = Number(el.dataset.task);
       getWeek(state.weekStart).days[dayIdx].tasks[taskIdx].text = el.value;
+      if (!el.value.trim()) {
+        restoreMatrixForWeeklyTask(state.weekStart, dayIdx, taskIdx);
+      } else {
+        syncMatrixForWeeklyTask(state.weekStart, dayIdx, taskIdx);
+      }
       refreshDayStats(dayIdx);
       scheduleSave();
       return;
@@ -423,7 +433,8 @@ function runSearch(query) {
   }
 
   for (const quadrant of QUADRANTS) {
-    (state.matrix[quadrant.id] || []).forEach((text, idx) => {
+    (state.matrix[quadrant.id] || []).forEach((task, idx) => {
+      const text = getMatrixTaskText(task);
       if (text.toLowerCase().includes(q)) {
         results.push({
           kind: "matrix",
@@ -509,15 +520,17 @@ function setupTabs() {
         p.classList.toggle("active", active);
         p.hidden = !active;
       });
-      document.body.classList.toggle("view-weekly", tab === "weekly");
-      document.body.classList.toggle("view-matrix", tab === "eisenhower");
+      document.body.classList.remove("view-weekly", "view-matrix", "view-stats");
+      if (tab === "weekly") document.body.classList.add("view-weekly");
+      else if (tab === "eisenhower") document.body.classList.add("view-matrix");
+      else if (tab === "stats") document.body.classList.add("view-stats");
       document.getElementById("printBtn")?.toggleAttribute("hidden", tab !== "weekly");
       if (tab === "eisenhower") {
-        if (!matrixReady) {
-          renderMatrix();
-          matrixReady = true;
-        }
+        renderMatrix();
+        if (!matrixReady) matrixReady = true;
         fitMatrixWindow();
+      } else if (tab === "stats") {
+        renderWeeklyStats();
       } else {
         restoreWeeklyWindow();
       }

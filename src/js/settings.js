@@ -96,6 +96,7 @@ function initSettings() {
     }));
     syncSettingsControls();
     renderWeekly();
+    maybeRefreshStatsTab();
     scheduleSave();
   });
 
@@ -108,6 +109,7 @@ function initSettings() {
     document.getElementById("colorPreset").value = "default";
     syncSettingsControls();
     renderWeekly();
+    maybeRefreshStatsTab();
     scheduleSave();
   });
 
@@ -128,6 +130,7 @@ function initSettings() {
     document.getElementById("colorPreset").value = "custom";
     syncSettingsControls();
     renderWeekly();
+    maybeRefreshStatsTab();
     scheduleSave();
   });
 
