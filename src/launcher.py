@@ -57,8 +57,8 @@ LICENSE_HTML = """<!DOCTYPE html>
 <title>Активация Планера</title>
 <style>
   body { font-family: "Segoe UI", sans-serif; background: #faf8f6; color: #434343; margin: 0; }
-  .card { max-width: 420px; margin: 2rem auto; padding: 1.5rem; background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,.08); }
-  h2 { margin: 0 0 .5rem; font-size: 1.15rem; }
+  .card { width: min(400px, calc(100% - 2rem)); margin: 2rem auto; padding: 1.25rem 1.35rem 1.35rem; background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,.08); }
+  h2 { margin: 0 0 .45rem; font-size: 1.15rem; }
   p { color: #666; margin: 0 0 1rem; font-size: .9rem; }
   input { width: 100%; box-sizing: border-box; padding: .55rem .65rem; border: 1px solid #e8e0d8; border-radius: 8px; font-size: .9rem; margin-bottom: .65rem; }
   button { border: 1px solid #e8e0d8; background: #fff; padding: .45rem 1rem; border-radius: 8px; cursor: pointer; font-size: .85rem; }

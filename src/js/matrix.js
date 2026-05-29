@@ -356,9 +356,12 @@ function setupMatrixEvents() {
     scheduleSave();
   });
 
-  document.getElementById("transferCancelBtn")?.addEventListener("click", () => {
-    pendingTransfer = null;
-    pendingTransferMeta = null;
-    hideOverlay(document.getElementById("transferOverlay"));
-  });
+  document.getElementById("transferCancelBtn")?.addEventListener("click", closeTransferOverlay);
+  document.getElementById("transferCloseBtn")?.addEventListener("click", closeTransferOverlay);
+}
+
+function closeTransferOverlay() {
+  pendingTransfer = null;
+  pendingTransferMeta = null;
+  hideOverlay(document.getElementById("transferOverlay"));
 }

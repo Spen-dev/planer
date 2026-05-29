@@ -1369,20 +1369,15 @@ body.view-stats .stats-layout {
   z-index: 110;
 }
 
-.message-card {
-  width: min(22rem, 100%);
-  padding: 0.65rem 0.85rem 0.75rem;
-}
-
 .message-card-text {
-  margin: 0 0 0.65rem;
-  font-size: 0.82rem;
+  margin: 0 0 0.85rem;
+  font-size: 0.9rem;
   line-height: 1.35;
-  color: var(--text);
+  color: var(--muted);
 }
 
 .overlay-card {
-  width: min(420px, 100%);
+  width: min(400px, 100%);
   background: var(--surface);
   border-radius: 12px;
   padding: 1.25rem 1.35rem 1.35rem;
@@ -1391,17 +1386,12 @@ body.view-stats .stats-layout {
 }
 
 .settings-card {
-  width: min(400px, 100%);
-  max-height: min(90vh, 720px);
   display: flex;
   flex-direction: column;
 }
 
 .settings-scroll {
-  overflow-y: auto;
-  flex: 1;
-  min-height: 0;
-  padding-right: 0.25rem;
+  flex: 0 0 auto;
   margin-bottom: 0.75rem;
 }
 
@@ -1562,25 +1552,7 @@ body.view-stats .stats-layout {
 }
 
 .settings-card .overlay-header {
-  margin-bottom: 0.45rem;
   padding-right: 0.05rem;
-}
-
-.search-card .overlay-header {
-  margin-bottom: 0.5rem;
-}
-
-.security-card {
-  padding: 0.55rem 0.85rem 0.65rem;
-  max-width: 26rem;
-}
-
-.security-card .overlay-header {
-  margin-bottom: 0.3rem;
-}
-
-.security-card .overlay-header h2 {
-  font-size: 0.95rem;
 }
 
 .security-card .settings-block {
@@ -1697,10 +1669,6 @@ body.view-stats .stats-layout {
 .about-link {
   color: var(--text);
   font-size: 0.8rem;
-}
-
-.search-card {
-  width: min(480px, 100%);
 }
 
 .search-filters {
@@ -1936,7 +1904,7 @@ body.view-stats .stats-layout {
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
-  margin-bottom: 0.35rem;
+  margin-bottom: 0.45rem;
 }
 
 .overlay-header h2 {

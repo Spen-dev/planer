@@ -30,7 +30,7 @@
       <button type="button" id="securityBtn" class="btn-icon" title="Безопасность — смена пароля" aria-label="Безопасность">🔒</button>
       <button type="button" id="settingsBtn" class="btn-icon" title="Настройки" aria-label="Настройки">⚙</button>
       <time id="appClock" class="app-clock" datetime="" aria-label="Текущее время"></time>
-      <span id="appBuildTag" class="app-build-tag" aria-hidden="true">v30</span>
+      <span id="appBuildTag" class="app-build-tag" aria-hidden="true">v32</span>
       <span class="app-brand" aria-hidden="true">Spen-Dev(C)</span>
     </div>
   </header>
@@ -88,16 +88,20 @@
 
   <div id="licenseOverlay" class="overlay" hidden>
     <div class="overlay-card">
-      <h2>Активация Планера</h2>
+      <div class="overlay-header">
+        <h2>Активация Планера</h2>
+      </div>
       <p class="app-motto overlay-motto">
         <span class="app-motto-lead">Мой планер</span>
         <span class="app-motto-sep" aria-hidden="true">—</span>
         <span class="app-motto-tail">твоя борьба с прокрастинацией!</span>
       </p>
-      <p>Введите лицензионный ключ для запуска приложения.</p>
+      <p class="overlay-hint">Введите лицензионный ключ для запуска приложения.</p>
       <input type="text" id="licenseKey" placeholder="PLAN-XXXX-XXXX-XXXX-XXXX" autocomplete="off" />
       <p id="licenseError" class="overlay-error" hidden></p>
-      <button type="button" id="licenseActivate" class="btn-secondary">Активировать</button>
+      <div class="overlay-actions">
+        <button type="button" id="licenseActivate" class="btn-secondary">Активировать</button>
+      </div>
     </div>
   </div>
 
@@ -119,10 +123,15 @@
 
   <div id="transferOverlay" class="overlay" hidden>
     <div class="overlay-card">
-      <h2>Добавить в день</h2>
+      <div class="overlay-header">
+        <h2>Добавить в день</h2>
+        <button type="button" id="transferCloseBtn" class="overlay-close-btn" title="Закрыть" aria-label="Закрыть">×</button>
+      </div>
       <p id="transferTaskText" class="transfer-preview"></p>
       <div id="transferDayButtons" class="transfer-days"></div>
-      <button type="button" id="transferCancelBtn" class="btn-secondary">Отмена</button>
+      <div class="overlay-actions">
+        <button type="button" id="transferCancelBtn" class="btn-secondary">Отмена</button>
+      </div>
     </div>
   </div>
 
@@ -148,6 +157,14 @@
           </div>
         </label>
         <label class="settings-field">
+          <span>Масштаб</span>
+          <select id="fontScaleSelect" aria-label="Масштаб интерфейса">
+            <option value="100">100%</option>
+            <option value="110">110%</option>
+            <option value="125">125%</option>
+          </select>
+        </label>
+        <label class="settings-field">
           <span>Палитра колонок</span>
           <select id="colorPreset">
             <option value="default">Стандартная</option>
@@ -171,20 +188,8 @@
 
         <div class="settings-section-title">О программе</div>
         <div class="about-block">
-          <div><strong>Планер</strong> <span id="aboutVersion">—</span> <span id="aboutBuildTag" class="about-build-tag">v30</span></div>
+          <div><strong>Планер</strong> <span id="aboutVersion">—</span> <span id="aboutBuildTag" class="about-build-tag">v32</span></div>
           <div class="about-muted">Данные: <span id="aboutDataDir">—</span></div>
-        </div>
-
-        <div class="settings-section-title">Приложение</div>
-        <div class="settings-block settings-app">
-          <label class="settings-app-row" title="Масштаб интерфейса">
-            <span class="settings-app-label">Масштаб</span>
-            <select id="fontScaleSelect" aria-label="Масштаб интерфейса">
-              <option value="100">100%</option>
-              <option value="110">110%</option>
-              <option value="125">125%</option>
-            </select>
-          </label>
         </div>
       </div>
       <div class="settings-actions">
@@ -230,21 +235,29 @@
   </div>
 
   <div id="passwordChangedOverlay" class="overlay overlay-top" hidden>
-    <div class="overlay-card message-card">
+    <div class="overlay-card">
       <div class="overlay-header">
         <h2>Готово</h2>
         <button type="button" id="passwordChangedCloseBtn" class="overlay-close-btn" title="Закрыть" aria-label="Закрыть">×</button>
       </div>
       <p class="message-card-text">Пароль изменён.</p>
-      <button type="button" id="passwordChangedOkBtn" class="btn-secondary settings-inline-btn security-action-btn">OK</button>
+      <div class="overlay-actions">
+        <button type="button" id="passwordChangedOkBtn" class="btn-secondary">OK</button>
+      </div>
     </div>
   </div>
 
   <div id="passwordOverlay" class="overlay" hidden>
     <div class="overlay-card">
-      <h2 id="passwordTitle">Пароль шифрования</h2>
-      <p class="app-motto">Мой планер — твоя борьба с прокрастинацией!</p>
-      <p id="passwordHint">Данные хранятся в зашифрованном виде на этом компьютере.</p>
+      <div class="overlay-header">
+        <h2 id="passwordTitle">Пароль шифрования</h2>
+      </div>
+      <p class="app-motto overlay-motto">
+        <span class="app-motto-lead">Мой планер</span>
+        <span class="app-motto-sep" aria-hidden="true">—</span>
+        <span class="app-motto-tail">твоя борьба с прокрастинацией!</span>
+      </p>
+      <p id="passwordHint" class="overlay-hint">Данные хранятся в зашифрованном виде на этом компьютере.</p>
       <input type="password" id="passwordInput" class="no-paste-password" placeholder="Пароль" autocomplete="off" spellcheck="false" />
       <input type="password" id="passwordConfirm" class="no-paste-password" placeholder="Повтор пароля" autocomplete="off" spellcheck="false" hidden />
       <label id="rememberWrap" class="remember-row" hidden>
@@ -252,7 +265,9 @@
         <span>Запомнить на этом компьютере</span>
       </label>
       <p id="passwordError" class="overlay-error" hidden></p>
-      <button type="button" id="passwordSubmit" class="btn-secondary">Продолжить</button>
+      <div class="overlay-actions">
+        <button type="button" id="passwordSubmit" class="btn-secondary">Продолжить</button>
+      </div>
     </div>
   </div>
 
