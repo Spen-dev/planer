@@ -105,6 +105,7 @@ function showPasswordOverlay(mode) {
           return;
         }
         sessionPassword = pass;
+        storageUnlockVerified = !hasCryptoSetup();
         if (document.getElementById("rememberPassword").checked) {
           await saveRememberedPassword(pass);
         } else {
@@ -126,7 +127,7 @@ function showPasswordOverlay(mode) {
         resolve(pass);
       } catch {
         sessionPassword = null;
-        passwordError.textContent = "Неверный пароль.";
+        passwordError.textContent = "Неверный пароль. Сохранённые данные не изменены.";
         passwordError.hidden = false;
       }
     };
@@ -146,7 +147,6 @@ function setupKeyboardShortcuts() {
   document.addEventListener("keydown", (e) => {
     const tag = e.target.tagName;
     const inField = tag === "INPUT" || tag === "TEXTAREA" || e.target.isContentEditable;
-    const overlayOpen = document.querySelector(".overlay:not([hidden])");
 
     if (e.ctrlKey && e.key.toLowerCase() === "s") {
       e.preventDefault();
@@ -169,9 +169,32 @@ function setupKeyboardShortcuts() {
     } else if (e.key.toLowerCase() === "t" || e.key === "Home") {
       e.preventDefault();
       goToTodayWeek();
-    } else if (e.key === "Escape" && overlayOpen) {
-      hideOverlay(overlayOpen);
+    } else if (e.key === "Escape") {
+      const overlays = [...document.querySelectorAll(".overlay:not([hidden])")];
+      if (overlays.length) {
+        e.preventDefault();
+        hideOverlay(overlays[overlays.length - 1]);
+      }
     }
+  });
+}
+
+function setupAppClock() {
+  const el = document.getElementById("appClock");
+  if (!el) return;
+  const tick = () => {
+    const now = new Date();
+    el.textContent = now.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+    el.dateTime = now.toISOString();
+  };
+  tick();
+  window.setInterval(tick, 1000);
+}
+
+function setupUndoShortcut() {
+  document.addEventListener("keydown", (e) => {
+    if (!(e.ctrlKey || e.metaKey) || e.key.toLowerCase() !== "z" || e.shiftKey) return;
+    if (undoLastChange()) e.preventDefault();
   });
 }
 
@@ -181,17 +204,20 @@ async function bootApp() {
   state = await loadState();
   if (!state.appearance) state.appearance = defaultAppearance();
   applyAppearance();
-  initSettings();
   setupWeeklyEvents();
-  setupMatrixEvents();
-  setupStatsEvents();
   setupWeeklyToolbar();
-  setupSearch();
   setupTabs();
+  renderWeekly(true);
+  scheduleFitWeeklyWindow(false, true);
+  initSettings();
   setupKeyboardShortcuts();
   setupWeeklyWindowListeners();
-  renderWeekly();
-  scheduleFitWeeklyWindow(false, true);
+  setupAppClock();
+  setupUndoShortcut();
+  setupSearch();
+  setupMatrixEvents();
+  setupStatsEvents();
+  initFeatures();
 }
 
 function startApp() {
@@ -202,13 +228,4 @@ function startApp() {
   void bootApp();
 }
 
-async function startDesktopApp() {
-  await waitForPyWebViewApi();
-  startApp();
-}
-
-if (isDesktopShell()) {
-  void startDesktopApp();
-} else {
-  startApp();
-}
+startApp();

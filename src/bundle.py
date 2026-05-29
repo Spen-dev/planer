@@ -1,7 +1,5 @@
-"""Bundle index.html, styles.css and js/*.js into a single protected app.html for the EXE."""
-import base64
+"""Bundle index.html, styles.css and js/*.js into app.html + app.bundle.js for the EXE."""
 import re
-import zlib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
@@ -13,6 +11,7 @@ js_files = [
     ROOT / "js" / "weekly.js",
     ROOT / "js" / "matrix.js",
     ROOT / "js" / "stats.js",
+    ROOT / "js" / "features.js",
     ROOT / "js" / "settings.js",
     ROOT / "js" / "protect.js",
     ROOT / "js" / "app.js",
@@ -41,25 +40,10 @@ def minify_js(code: str) -> str:
         return "\n".join(lines)
 
 
-def pack_js(code: str) -> str:
-    compressed = zlib.compress(code.encode("utf-8"), 9)
-    encoded = base64.b64encode(compressed).decode("ascii")
-    chunks = [encoded[i : i + 120] for i in range(0, len(encoded), 120)]
-    payload = "+".join(f'"{chunk}"' for chunk in chunks)
-    return (
-        "(async()=>{try{"
-        f"const p={payload};"
-        "const b=Uint8Array.from(atob(p),c=>c.charCodeAt(0));"
-        'const t=await new Response(new Blob([b]).stream().pipeThrough('
-        'new DecompressionStream("deflate"))).text();'
-        "new Function(t)();"
-        "}catch(e){console.error(e);}})();"
-    )
-
-
 css = minify_css(css)
 js = minify_js("window.__PLANER_DESKTOP__=true;\n" + js)
-js = pack_js(js)
+
+(ROOT / "app.bundle.js").write_text(js, encoding="utf-8")
 
 html = html.replace(
     '<link rel="stylesheet" href="styles.css" />',
@@ -68,7 +52,7 @@ html = html.replace(
 for path in js_files:
     tag = f'<script src="{path.relative_to(ROOT).as_posix()}"></script>'
     html = html.replace(tag, "")
-html = html.replace("</body>", f"<script>\n{js}\n</script>\n</body>")
+html = html.replace("</body>", '<script src="app.bundle.js"></script>\n</body>')
 
 (ROOT / "app.html").write_text(html, encoding="utf-8")
-print("Created app.html")
+print("Created app.html and app.bundle.js")

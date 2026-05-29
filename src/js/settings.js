@@ -2,6 +2,9 @@ function syncSettingsControls() {
   document.getElementById("themeSelect").value = state.appearance.theme || "light";
   document.getElementById("colorPreset").value = state.appearance.preset || "custom";
   document.getElementById("fontColor").value = effectiveFontColor();
+  document.getElementById("fontScaleSelect").value = String(state.appearance.fontScale || 100);
+  const matrixHide = document.getElementById("matrixHideTransferred");
+  if (matrixHide) matrixHide.checked = Boolean(state.appearance.matrixHideTransferred);
   document.getElementById("dayColorPickers").querySelectorAll('input[type="color"]').forEach((input) => {
     const dayIdx = Number(input.dataset.day);
     const theme = getDayThemes()[dayIdx];
@@ -21,6 +24,45 @@ async function loadAboutInfo() {
     const autostart = document.getElementById("autostartCheck");
     if (autostart && info) autostart.checked = Boolean(info.autostart);
   } catch (_) { /* browser dev */ }
+}
+
+async function loadSecurityInfo() {
+  const keyEl = document.getElementById("securityLicenseKey");
+  const errEl = document.getElementById("licenseSecurityError");
+  if (keyEl) keyEl.value = "";
+  if (errEl) {
+    errEl.hidden = true;
+    errEl.style.color = "";
+  }
+}
+
+async function activateSecurityLicense() {
+  const errEl = document.getElementById("licenseSecurityError");
+  const keyEl = document.getElementById("securityLicenseKey");
+  errEl.hidden = true;
+  const key = keyEl?.value.trim() || "";
+  if (!key) {
+    errEl.textContent = "Введите лицензионный ключ.";
+    errEl.hidden = false;
+    keyEl?.focus();
+    return;
+  }
+  const api = window.pywebview?.api;
+  if (!api?.activate_license) {
+    errEl.textContent = "Активация доступна только в приложении Planer.exe.";
+    errEl.hidden = false;
+    return;
+  }
+  const res = await api.activate_license(key);
+  if (!res?.ok) {
+    errEl.textContent = res?.error || "Не удалось активировать ключ.";
+    errEl.hidden = false;
+    return;
+  }
+  keyEl.value = "";
+  errEl.textContent = "Лицензия активирована.";
+  errEl.hidden = false;
+  errEl.style.color = "var(--text)";
 }
 
 function initSettings() {
@@ -48,11 +90,18 @@ function initSettings() {
 
   document.getElementById("securityBtn")?.addEventListener("click", () => {
     const errEl = document.getElementById("passwordChangeError");
+    const licenseErrEl = document.getElementById("licenseSecurityError");
     errEl.hidden = true;
     errEl.style.color = "";
+    if (licenseErrEl) {
+      licenseErrEl.hidden = true;
+      licenseErrEl.style.color = "";
+    }
     document.getElementById("oldPassword").value = "";
     document.getElementById("newPassword").value = "";
     document.getElementById("newPasswordConfirm").value = "";
+    void loadSecurityInfo();
+    initNoPastePasswordInputs(document.getElementById("securityOverlay"));
     showOverlay(document.getElementById("securityOverlay"));
     document.getElementById("oldPassword").focus();
   });
@@ -84,6 +133,13 @@ function initSettings() {
     applyAppearance();
     syncSettingsControls();
     scheduleSave();
+  });
+
+  document.getElementById("fontScaleSelect").addEventListener("change", (e) => {
+    state.appearance.fontScale = Number(e.target.value) || 100;
+    applyAppearance();
+    scheduleSave();
+    scheduleFitWeeklyWindow();
   });
 
   document.getElementById("colorPreset").addEventListener("change", (e) => {
@@ -144,25 +200,27 @@ function initSettings() {
     }
   });
 
-  document.getElementById("aboutEula")?.addEventListener("click", (e) => {
-    e.preventDefault();
-    if (window.pywebview?.api) {
-      alert("Файл EULA: LICENSE в папке с программой.");
-    } else {
-      window.open("../LICENSE", "_blank");
-    }
+  document.getElementById("activateLicenseBtn")?.addEventListener("click", () => void activateSecurityLicense());
+  document.getElementById("securityLicenseKey")?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") void activateSecurityLicense();
   });
 
-  document.getElementById("clearLicenseBtn")?.addEventListener("click", async () => {
-    if (!confirm("Сбросить лицензию? При следующем запуске потребуется ключ.")) return;
+  document.getElementById("openEulaBtn")?.addEventListener("click", async () => {
     const api = window.pywebview?.api;
-    if (api?.clear_license) {
-      await api.clear_license();
+    if (!api?.open_eula) {
+      window.open("../LICENSE", "_blank");
+      return;
     }
-    alert("Лицензия сброшена. Перезапустите приложение.");
+    const res = await api.open_eula();
+    if (!res?.ok) alert(res?.error || "Не удалось открыть EULA.");
   });
 
   document.getElementById("changePasswordBtn")?.addEventListener("click", () => void changePassword());
+
+  const passwordChangedOverlay = document.getElementById("passwordChangedOverlay");
+  const hidePasswordChangedOverlay = () => hideOverlay(passwordChangedOverlay);
+  document.getElementById("passwordChangedCloseBtn")?.addEventListener("click", hidePasswordChangedOverlay);
+  document.getElementById("passwordChangedOkBtn")?.addEventListener("click", hidePasswordChangedOverlay);
 }
 
 async function changePassword() {
@@ -201,7 +259,5 @@ async function changePassword() {
   document.getElementById("oldPassword").value = "";
   document.getElementById("newPassword").value = "";
   document.getElementById("newPasswordConfirm").value = "";
-  errEl.textContent = "Пароль изменён.";
-  errEl.hidden = false;
-  errEl.style.color = "var(--text)";
+  showOverlay(document.getElementById("passwordChangedOverlay"));
 }

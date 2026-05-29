@@ -13,6 +13,13 @@
       <button type="button" class="tab" data-tab="eisenhower" role="tab" aria-selected="false">Матрица Эйзенхауэра</button>
       <button type="button" class="tab" data-tab="stats" role="tab" aria-selected="false">Недельная статистика</button>
     </nav>
+    <div class="header-motto" role="note" aria-label="Девиз приложения">
+      <p class="app-motto">
+        <span class="app-motto-lead">Мой планер</span>
+        <span class="app-motto-sep" aria-hidden="true">—</span>
+        <span class="app-motto-tail">твоя борьба с прокрастинацией!</span>
+      </p>
+    </div>
     <div class="header-actions">
       <button type="button" id="printBtn" class="btn-icon" title="Печать недели" aria-label="Печать недели">
         <svg class="btn-icon-svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -22,6 +29,8 @@
       <button type="button" id="searchBtn" class="btn-icon" title="Поиск (Ctrl+F)" aria-label="Поиск">🔍</button>
       <button type="button" id="securityBtn" class="btn-icon" title="Безопасность — смена пароля" aria-label="Безопасность">🔒</button>
       <button type="button" id="settingsBtn" class="btn-icon" title="Настройки" aria-label="Настройки">⚙</button>
+      <time id="appClock" class="app-clock" datetime="" aria-label="Текущее время"></time>
+      <span id="appBuildTag" class="app-build-tag" aria-hidden="true">v30</span>
       <span class="app-brand" aria-hidden="true">Spen-Dev(C)</span>
     </div>
   </header>
@@ -48,6 +57,12 @@
 
     <section id="eisenhower" class="panel" role="tabpanel" hidden>
       <div class="matrix-layout">
+        <div class="matrix-toolbar">
+          <label class="matrix-filter">
+            <input type="checkbox" id="matrixHideTransferred" />
+            Скрыть перенесённые
+          </label>
+        </div>
         <div id="matrixGrid" class="matrix-grid"></div>
       </div>
     </section>
@@ -61,6 +76,9 @@
           <button type="button" id="statsNextWeek" class="btn-icon" title="Следующая неделя">→</button>
         </div>
         <div id="statsSummary" class="stats-summary"></div>
+        <div class="stats-toolbar stats-toolbar-secondary">
+          <button type="button" id="statsExportBtn" class="btn-secondary">Экспорт CSV</button>
+        </div>
         <div id="statsCharts" class="stats-charts"></div>
       </div>
     </section>
@@ -71,6 +89,11 @@
   <div id="licenseOverlay" class="overlay" hidden>
     <div class="overlay-card">
       <h2>Активация Планера</h2>
+      <p class="app-motto overlay-motto">
+        <span class="app-motto-lead">Мой планер</span>
+        <span class="app-motto-sep" aria-hidden="true">—</span>
+        <span class="app-motto-tail">твоя борьба с прокрастинацией!</span>
+      </p>
       <p>Введите лицензионный ключ для запуска приложения.</p>
       <input type="text" id="licenseKey" placeholder="PLAN-XXXX-XXXX-XXXX-XXXX" autocomplete="off" />
       <p id="licenseError" class="overlay-error" hidden></p>
@@ -80,10 +103,17 @@
 
   <div id="searchOverlay" class="overlay" hidden>
     <div class="overlay-card search-card">
-      <h2>Поиск</h2>
+      <div class="overlay-header">
+        <h2>Поиск</h2>
+        <button type="button" id="searchCloseBtn" class="overlay-close-btn" title="Закрыть" aria-label="Закрыть">×</button>
+      </div>
       <input type="search" id="searchInput" placeholder="Задачи и заметки…" autocomplete="off" />
+      <div class="search-filters">
+        <label><input type="checkbox" id="searchFilterTasks" checked /> Задачи</label>
+        <label><input type="checkbox" id="searchFilterNotes" checked /> Заметки</label>
+        <label><input type="checkbox" id="searchFilterMatrix" checked /> Матрица</label>
+      </div>
       <div id="searchResults" class="search-results"></div>
-      <button type="button" id="searchCloseBtn" class="btn-secondary">Закрыть</button>
     </div>
   </div>
 
@@ -98,7 +128,10 @@
 
   <div id="settingsOverlay" class="overlay" hidden>
     <div class="overlay-card settings-card">
-      <h2>Настройки</h2>
+      <div class="overlay-header">
+        <h2>Настройки</h2>
+        <button type="button" id="settingsCloseBtn" class="overlay-close-btn" title="Закрыть" aria-label="Закрыть">×</button>
+      </div>
       <div class="settings-scroll">
         <label class="settings-field">
           <span>Тема</span>
@@ -129,65 +162,94 @@
         <div id="dayColorPickers" class="color-pickers"></div>
 
         <div class="settings-section-title">Система</div>
-        <label class="settings-field settings-check">
-          <input type="checkbox" id="autostartCheck" />
-          <span>Запускать с Windows</span>
-        </label>
+        <div class="settings-block settings-app">
+          <label class="settings-app-row" title="Запускать с Windows">
+            <span class="settings-app-label">Автозапуск</span>
+            <input type="checkbox" id="autostartCheck" aria-label="Запускать с Windows" />
+          </label>
+        </div>
 
         <div class="settings-section-title">О программе</div>
         <div class="about-block">
-          <div><strong>Планер</strong> <span id="aboutVersion">—</span></div>
+          <div><strong>Планер</strong> <span id="aboutVersion">—</span> <span id="aboutBuildTag" class="about-build-tag">v30</span></div>
           <div class="about-muted">Данные: <span id="aboutDataDir">—</span></div>
+        </div>
+
+        <div class="settings-section-title">Приложение</div>
+        <div class="settings-block settings-app">
+          <label class="settings-app-row" title="Масштаб интерфейса">
+            <span class="settings-app-label">Масштаб</span>
+            <select id="fontScaleSelect" aria-label="Масштаб интерфейса">
+              <option value="100">100%</option>
+              <option value="110">110%</option>
+              <option value="125">125%</option>
+            </select>
+          </label>
         </div>
       </div>
       <div class="settings-actions">
         <button type="button" id="resetColorsBtn" class="btn-secondary">Сбросить цвета</button>
-        <button type="button" id="settingsCloseBtn" class="btn-secondary">Закрыть</button>
       </div>
     </div>
   </div>
 
   <div id="securityOverlay" class="overlay" hidden>
     <div class="overlay-card security-card">
-      <h2>Безопасность</h2>
+      <div class="overlay-header">
+        <h2>Безопасность</h2>
+        <button type="button" id="securityCloseBtn" class="overlay-close-btn" title="Закрыть" aria-label="Закрыть">×</button>
+      </div>
       <div class="settings-block security-section">
         <div class="settings-block-title">Пароль</div>
-        <p class="overlay-hint">Смена пароля шифрования данных на этом компьютере.</p>
         <label class="settings-field">
-          <span>Текущий пароль</span>
-          <input type="password" id="oldPassword" autocomplete="off" />
+          <span>Текущий</span>
+          <input type="password" id="oldPassword" class="no-paste-password" autocomplete="off" spellcheck="false" />
         </label>
         <label class="settings-field">
-          <span>Новый пароль</span>
-          <input type="password" id="newPassword" autocomplete="off" />
+          <span>Новый</span>
+          <input type="password" id="newPassword" class="no-paste-password" autocomplete="off" spellcheck="false" />
         </label>
         <label class="settings-field">
-          <span>Повтор нового пароля</span>
-          <input type="password" id="newPasswordConfirm" autocomplete="off" />
+          <span>Повтор</span>
+          <input type="password" id="newPasswordConfirm" class="no-paste-password" autocomplete="off" spellcheck="false" />
         </label>
         <p id="passwordChangeError" class="overlay-error" hidden></p>
-        <button type="button" id="changePasswordBtn" class="btn-secondary settings-inline-btn">Сменить пароль</button>
+        <button type="button" id="changePasswordBtn" class="btn-secondary settings-inline-btn security-action-btn">Сменить пароль</button>
       </div>
       <div class="settings-block security-section">
         <div class="settings-block-title">Лицензия</div>
-        <a id="aboutEula" href="#" class="about-link">Лицензионное соглашение (EULA)</a>
-        <button type="button" id="clearLicenseBtn" class="btn-secondary settings-inline-btn" title="Потребуется ключ при следующем запуске">Сбросить лицензию</button>
+        <label class="settings-field">
+          <span>Ключ</span>
+          <input type="text" id="securityLicenseKey" placeholder="PLAN-XXXX-XXXX-XXXX-XXXX" autocomplete="off" spellcheck="false" />
+        </label>
+        <p id="licenseSecurityError" class="overlay-error" hidden></p>
+        <button type="button" id="activateLicenseBtn" class="btn-secondary settings-inline-btn security-action-btn">Активировать</button>
+        <button type="button" id="openEulaBtn" class="btn-secondary settings-inline-btn security-action-btn">EULA</button>
       </div>
-      <div class="overlay-actions">
-        <button type="button" id="securityCloseBtn" class="btn-secondary">Закрыть</button>
+    </div>
+  </div>
+
+  <div id="passwordChangedOverlay" class="overlay overlay-top" hidden>
+    <div class="overlay-card message-card">
+      <div class="overlay-header">
+        <h2>Готово</h2>
+        <button type="button" id="passwordChangedCloseBtn" class="overlay-close-btn" title="Закрыть" aria-label="Закрыть">×</button>
       </div>
+      <p class="message-card-text">Пароль изменён.</p>
+      <button type="button" id="passwordChangedOkBtn" class="btn-secondary settings-inline-btn security-action-btn">OK</button>
     </div>
   </div>
 
   <div id="passwordOverlay" class="overlay" hidden>
     <div class="overlay-card">
       <h2 id="passwordTitle">Пароль шифрования</h2>
+      <p class="app-motto">Мой планер — твоя борьба с прокрастинацией!</p>
       <p id="passwordHint">Данные хранятся в зашифрованном виде на этом компьютере.</p>
-      <input type="password" id="passwordInput" placeholder="Пароль" autocomplete="off" />
-      <input type="password" id="passwordConfirm" placeholder="Повтор пароля" autocomplete="off" hidden />
+      <input type="password" id="passwordInput" class="no-paste-password" placeholder="Пароль" autocomplete="off" spellcheck="false" />
+      <input type="password" id="passwordConfirm" class="no-paste-password" placeholder="Повтор пароля" autocomplete="off" spellcheck="false" hidden />
       <label id="rememberWrap" class="remember-row" hidden>
         <input type="checkbox" id="rememberPassword" />
-        Запомнить на этом компьютере
+        <span>Запомнить на этом компьютере</span>
       </label>
       <p id="passwordError" class="overlay-error" hidden></p>
       <button type="button" id="passwordSubmit" class="btn-secondary">Продолжить</button>
@@ -198,6 +260,7 @@
   <script src="js/weekly.js"></script>
   <script src="js/matrix.js"></script>
   <script src="js/stats.js"></script>
+  <script src="js/features.js"></script>
   <script src="js/settings.js"></script>
   <script src="js/protect.js"></script>
   <script src="js/app.js"></script>

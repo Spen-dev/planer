@@ -5,8 +5,8 @@ const REMEMBER_KEY = "planer-remember-v1";
 const DEVICE_KEY = "planer-device-key-v1";
 const TASKS_PER_DAY = 15;
 const NOTES_MAX = 15;
-const INITIAL_TASK_ROWS = 6;
-const INITIAL_NOTE_ROWS = 4;
+const INITIAL_TASK_ROWS = 10;
+const INITIAL_NOTE_ROWS = 5;
 const MATRIX_TASKS = 15;
 const INITIAL_MATRIX_ROWS = 6;
 
@@ -79,12 +79,11 @@ const WEEKLY_LAYOUT = {
   cardHeader: 46,
   progress: 50,
   tasksHead: 26,
-  taskRow: 22,
+  dayRow: 26,
   stats: 30,
   notesTop: 16,
-  notesHead: 24,
-  noteRow: 21,
-  notesPadBottom: 14,
+  notesHead: 26,
+  cardPadBottom: 14,
   bottomGap: 23,
 };
 
@@ -211,6 +210,7 @@ function defaultMatrixClientHeight() {
 
 let state = defaultState();
 let sessionPassword = null;
+let storageUnlockVerified = false;
 let saveTimer = null;
 let fitTimer = null;
 let saveStatusTimer = null;
@@ -272,11 +272,13 @@ function getDayThemes() {
   const colors = state.appearance?.dayColors || COLOR_PRESETS.default;
   return DEFAULT_DAY_THEMES.map((base, i) => {
     const color = colors[i] || base;
-    const bg = color.bg || base.bg;
+    const bg = (color.bg || base.bg).toUpperCase();
+    const derived = themeFromBg(bg);
     return {
       name: base.name,
-      ...color,
       bg,
+      accent: color.accent || derived.accent,
+      light: color.light || derived.light,
       text: color.text || contrastText(bg),
     };
   });
@@ -291,6 +293,8 @@ function applyAppearance() {
   const appearance = state.appearance || defaultAppearance();
   const rootStyle = document.documentElement.style;
   document.documentElement.dataset.theme = appearance.theme === "dark" ? "dark" : "light";
+  const scale = Number(appearance.fontScale) || 100;
+  document.documentElement.style.fontSize = `${16 * scale / 100}px`;
   if (appearance.fontColor) {
     rootStyle.setProperty("--text", appearance.fontColor);
     rootStyle.setProperty(
@@ -342,16 +346,8 @@ function scheduleSave() {
 function scheduleFitWeeklyWindow(expandOnly = false, initial = false) {
   if (shouldPauseWeeklyAutoResize()) return;
   clearTimeout(fitTimer);
-  const delay = initial ? 120 : 0;
+  const delay = initial ? 0 : 0;
   fitTimer = setTimeout(() => fitWeeklyWindow(expandOnly, initial), delay);
-}
-
-function refitWeeklyWindowAfterRows() {
-  if (!isDesktopShell()) return;
-  cachedWeeklySize = null;
-  window.__weeklyLayoutCalibrated = false;
-  const refit = () => applyWeeklyWindowSize(true);
-  requestAnimationFrame(() => requestAnimationFrame(refit));
 }
 
 function defaultDay() {
@@ -415,8 +411,18 @@ function defaultAppearance() {
     theme: "light",
     preset: "default",
     fontColor: null,
+    fontScale: 100,
+    hideCompleted: false,
+    autoBackupEnabled: true,
+    autoBackupDays: 1,
+    minimizeToTray: false,
+    matrixHideTransferred: false,
     dayColors: COLOR_PRESETS.default.map((c) => ({ ...c, text: contrastText(c.bg) })),
   };
+}
+
+function defaultRecurringTasks() {
+  return [];
 }
 
 function defaultState() {
@@ -427,6 +433,7 @@ function defaultState() {
     matrixRowCounts: defaultMatrixRowCounts(),
     matrixTransferred: defaultMatrixTransferred(),
     matrixLinks: defaultMatrixLinks(),
+    recurringTasks: defaultRecurringTasks(),
     appearance: defaultAppearance(),
   };
 }
@@ -495,6 +502,7 @@ function parsePlainState(raw) {
       ...defaultMatrixLinks(),
       ...parsed.matrixLinks,
     },
+    recurringTasks: Array.isArray(parsed.recurringTasks) ? parsed.recurringTasks : defaultRecurringTasks(),
     appearance: {
       ...defaultAppearance(),
       ...parsed.appearance,
@@ -513,22 +521,48 @@ function parsePlainState(raw) {
 async function loadState() {
   let raw = localStorage.getItem(STORAGE_KEY);
   if (!raw) raw = localStorage.getItem("planer-data-v1");
-  if (!raw) return defaultState();
-  try {
-    const parsed = JSON.parse(raw);
-    if (parsed?.encrypted) {
-      if (!sessionPassword) throw new Error("NO_PASSWORD");
-      const text = await decryptText(parsed, sessionPassword);
-      return parsePlainState(text);
-    }
-    return parsePlainState(raw);
-  } catch (err) {
-    if (String(err?.message || err) === "NO_PASSWORD") throw err;
+  if (!raw) {
+    storageUnlockVerified = !hasCryptoSetup();
     return defaultState();
   }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    storageUnlockVerified = !hasCryptoSetup();
+    return defaultState();
+  }
+
+  if (parsed?.encrypted) {
+    if (!sessionPassword) {
+      storageUnlockVerified = false;
+      throw new Error("NO_PASSWORD");
+    }
+    try {
+      const text = await decryptText(parsed, sessionPassword);
+      storageUnlockVerified = true;
+      return parsePlainState(text);
+    } catch (err) {
+      storageUnlockVerified = false;
+      if (isLoadStateError(err?.message)) throw err;
+      throw new Error("WRONG_PASSWORD");
+    }
+  }
+
+  storageUnlockVerified = true;
+  return parsePlainState(raw);
+}
+
+function isLoadStateError(message) {
+  return message === "NO_PASSWORD" || message === "WRONG_PASSWORD";
 }
 
 async function saveState() {
+  if (hasCryptoSetup() && !storageUnlockVerified) {
+    setSaveStatus("error");
+    return;
+  }
   try {
     const plain = JSON.stringify(state);
     if (sessionPassword) {
@@ -699,10 +733,12 @@ let suppressWindowRefit = false;
 
 function fixedWeeklyClientHeight(taskRows, noteRows) {
   const L = WEEKLY_LAYOUT;
+  const rowH = L.dayRow;
+  const totalRows = taskRows + noteRows;
   const card = L.cardFixed != null
-    ? L.cardFixed + taskRows * L.taskRow + noteRows * L.noteRow
-    : L.cardHeader + L.progress + L.tasksHead + taskRows * L.taskRow
-      + L.stats + L.notesTop + L.notesHead + noteRows * L.noteRow + L.notesPadBottom;
+    ? L.cardFixed + totalRows * rowH
+    : L.cardHeader + L.progress + L.tasksHead + taskRows * rowH
+      + L.stats + L.notesTop + L.notesHead + noteRows * rowH + L.cardPadBottom;
   const week = L.toolbar + L.layoutGap + card;
   return Math.max(MIN_WEEKLY_HEIGHT, Math.ceil(L.header + L.mainPadY + week + VIEW_BOTTOM_GAP_PX));
 }
@@ -732,12 +768,13 @@ function calibrateWeeklyLayoutMetrics() {
 
   const taskRow = card.querySelector(".task-row");
   const noteRow = card.querySelector(".note-row");
-  if (taskRow) WEEKLY_LAYOUT.taskRow = Math.ceil(taskRow.getBoundingClientRect().height);
-  if (noteRow) WEEKLY_LAYOUT.noteRow = Math.ceil(noteRow.getBoundingClientRect().height);
+  const taskH = taskRow ? Math.ceil(taskRow.getBoundingClientRect().height) : 0;
+  const noteH = noteRow ? Math.ceil(noteRow.getBoundingClientRect().height) : 0;
+  if (taskH || noteH) WEEKLY_LAYOUT.dayRow = Math.max(taskH, noteH, WEEKLY_LAYOUT.dayRow);
 
   const cardHeight = card.getBoundingClientRect().height;
   WEEKLY_LAYOUT.cardFixed = Math.ceil(
-    cardHeight - day.taskRows * WEEKLY_LAYOUT.taskRow - day.noteRows * WEEKLY_LAYOUT.noteRow,
+    cardHeight - (day.taskRows + day.noteRows) * WEEKLY_LAYOUT.dayRow,
   );
   window.__weeklyLayoutCalibrated = true;
 }
@@ -903,19 +940,16 @@ function fitWeeklyWindow(_expandOnly = false, initial = false) {
   if (!isDesktopShell()) return;
   if (shouldPauseWeeklyAutoResize()) return;
   if (initial && !weeklyInitialFitDone) {
-    cachedWeeklySize = null;
-    window.__weeklyLayoutCalibrated = false;
-    const refit = () => {
+    weeklyInitialFitDone = true;
+    requestAnimationFrame(() => {
+      calibrateWeeklyLayoutMetrics();
       if (shouldPauseWeeklyAutoResize()) return;
-      applyWeeklyWindowSize(true);
-    };
-    requestAnimationFrame(() => requestAnimationFrame(refit));
-    setTimeout(refit, 150);
-    setTimeout(refit, 400);
-    setTimeout(() => {
-      refit();
-      weeklyInitialFitDone = true;
-    }, 900);
+      const width = WEEKLY_CLIENT_WIDTH;
+      const height = measureWeeklyClientHeight();
+      const innerH = window.innerHeight || 0;
+      if (Math.abs(innerH - height) > 8) applyWeeklyWindowSize(true);
+      else cachedWeeklySize = { width, height, key: `${width}|${height}` };
+    });
     return;
   }
   applyWeeklyWindowSize();
@@ -966,14 +1000,6 @@ function applyMatrixWindowSize(force = false) {
   if (!force && cachedWeeklySize?.key === sizeKey) return;
   cachedWeeklySize = { width, height, key: sizeKey };
   resizeAppWindow(width, height);
-}
-
-function refitMatrixWindowAfterRows() {
-  if (!isDesktopShell()) return;
-  cachedWeeklySize = null;
-  window.__matrixLayoutCalibrated = false;
-  const refit = () => applyMatrixWindowSize(true);
-  requestAnimationFrame(() => requestAnimationFrame(refit));
 }
 
 function restoreMatrixWindow() {
@@ -1109,7 +1135,8 @@ async function importBackup() {
 
     const backup = await parseBackupContent(rawText);
     const imported = backup.state ? parsePlainState(JSON.stringify(backup.state)) : parsePlainState(JSON.stringify(backup));
-    if (!confirm("Восстановить данные из файла? Текущие несохранённые изменения будут заменены.")) return;
+    const report = formatImportReport(backup, imported);
+    if (!confirm(`Восстановить данные из файла?\n\n${report}\n\nТекущие несохранённые изменения будут заменены.`)) return;
     state = imported;
     matrixReady = false;
     applyAppearance();

@@ -1,6 +1,19 @@
 function isEditableTarget(target) {
   if (!target || !(target instanceof Element)) return false;
-  return !!target.closest('input, textarea, select, [contenteditable="true"]');
+  return !!target.closest('input, textarea, select, .day-text-wrap, .day-text-label, .day-text-input');
+}
+
+function initNoPastePasswordInputs(root = document) {
+  root.querySelectorAll(".no-paste-password").forEach((input) => {
+    if (input.dataset.noPasteBound === "1") return;
+    input.dataset.noPasteBound = "1";
+    input.addEventListener("paste", (event) => event.preventDefault());
+    input.addEventListener("drop", (event) => event.preventDefault());
+    input.addEventListener("keydown", (event) => {
+      const key = event.key.toLowerCase();
+      if ((event.ctrlKey || event.metaKey) && key === "v") event.preventDefault();
+    });
+  });
 }
 
 function initCodeProtection() {
@@ -39,8 +52,10 @@ function initCodeProtection() {
       event.preventDefault();
       return;
     }
-    if (key === "u" || key === "s") {
+    if (key === "u") {
       event.preventDefault();
     }
   }, true);
+
+  initNoPastePasswordInputs();
 }

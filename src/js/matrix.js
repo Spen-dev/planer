@@ -215,6 +215,20 @@ function renderMatrixRow(qId, index, taskData) {
   });
   row.appendChild(checkbox);
   row.appendChild(input);
+  if (transferred) {
+    const badge = document.createElement("span");
+    badge.className = "matrix-link-badge";
+    badge.textContent = getMatrixLinkLabel?.(qId, index) || "→";
+    badge.title = "Перенесено в день недели";
+    row.appendChild(badge);
+    const restoreBtn = document.createElement("button");
+    restoreBtn.type = "button";
+    restoreBtn.className = "matrix-restore-btn";
+    restoreBtn.textContent = "↩";
+    restoreBtn.title = "Вернуть в матрицу";
+    restoreBtn.addEventListener("click", () => restoreMatrixFromWeekly(qId, index));
+    row.appendChild(restoreBtn);
+  }
   row.appendChild(btn);
   return row;
 }
@@ -252,7 +266,6 @@ function addMatrixRow(quadrantId) {
   if (state.matrixRowCounts[quadrantId] >= MATRIX_TASKS) return;
   state.matrixRowCounts[quadrantId] += 1;
   renderMatrix();
-  refitMatrixWindowAfterRows();
   scheduleSave();
 }
 
@@ -265,7 +278,6 @@ function removeMatrixRow(quadrantId) {
   state.matrixLinks[quadrantId][lastIdx] = null;
   state.matrixRowCounts[quadrantId] -= 1;
   renderMatrix();
-  refitMatrixWindowAfterRows();
   scheduleSave();
 }
 
@@ -273,6 +285,9 @@ function renderMatrix() {
   window.__matrixLayoutCalibrated = false;
   ensureMatrixState();
   syncAllMatrixLinksFromWeekly(false);
+  const hideTransferred = Boolean(state.appearance?.matrixHideTransferred);
+  const hideCheck = document.getElementById("matrixHideTransferred");
+  if (hideCheck) hideCheck.checked = hideTransferred;
   const matrixGrid = document.getElementById("matrixGrid");
   matrixGrid.innerHTML = "";
   for (const q of QUADRANTS) {
@@ -307,6 +322,7 @@ function renderMatrix() {
     const tasks = state.matrix[q.id] || [];
     const rowCount = getMatrixRowCount(q.id);
     for (let i = 0; i < rowCount; i++) {
+      if (hideTransferred && isMatrixTaskTransferred(q.id, i)) continue;
       block.appendChild(renderMatrixRow(q.id, i, tasks[i]));
     }
     block.appendChild(renderMatrixStatsBlock(q.id));

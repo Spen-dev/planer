@@ -108,6 +108,38 @@ function renderWeeklyStats(updateWindow = true) {
   const totals = calcWeekTotals(days);
   const weekProgress = totals.total > 0 ? Math.round((totals.completed / totals.total) * 100) : 0;
 
+  const prevStart = addDays(state.weekStart, -7);
+  const prevWeek = state.weeks[prevStart];
+  let prevProgress = null;
+  let prevDelta = null;
+  if (prevWeek) {
+    const prevDays = prevWeek.days.map((day) => calcDayStats(day));
+    const prevTotals = calcWeekTotals(prevDays);
+    prevProgress = prevTotals.total > 0
+      ? Math.round((prevTotals.completed / prevTotals.total) * 100)
+      : 0;
+    prevDelta = weekProgress - prevProgress;
+  }
+
+  const activeDays = days.filter((d) => d.total > 0);
+  const bestDay = activeDays.length
+    ? activeDays.reduce((a, b) => (b.progress > a.progress ? b : a))
+    : null;
+  const worstDay = activeDays.length
+    ? activeDays.reduce((a, b) => (b.progress < a.progress ? b : a))
+    : null;
+
+  const compareHtml = prevProgress === null
+    ? `<div class="stats-summary-card stats-summary-compare"><span class="stats-summary-label">К прошлой неделе</span><strong class="stats-summary-value">—</strong></div>`
+    : `<div class="stats-summary-card stats-summary-compare"><span class="stats-summary-label">К прошлой неделе</span><strong class="stats-summary-value">${prevDelta >= 0 ? "+" : ""}${prevDelta}%</strong><span class="stats-summary-sub">${prevProgress}% → ${weekProgress}%</span></div>`;
+
+  const bestHtml = bestDay
+    ? `<div class="stats-summary-card stats-summary-best"><span class="stats-summary-label">Лучший день</span><strong class="stats-summary-value">${bestDay.name}</strong><span class="stats-summary-sub">${Math.round(bestDay.progress * 100)}%</span></div>`
+    : "";
+  const worstHtml = worstDay && worstDay !== bestDay
+    ? `<div class="stats-summary-card stats-summary-worst"><span class="stats-summary-label">Сложный день</span><strong class="stats-summary-value">${worstDay.name}</strong><span class="stats-summary-sub">${Math.round(worstDay.progress * 100)}%</span></div>`
+    : "";
+
   summaryEl.innerHTML = `
     <div class="stats-summary-card stats-summary-done">
       <span class="stats-summary-label">Выполнено за неделю</span>
@@ -125,6 +157,9 @@ function renderWeeklyStats(updateWindow = true) {
       <span class="stats-summary-label">Прогресс недели</span>
       <strong class="stats-summary-value">${weekProgress}%</strong>
     </div>
+    ${compareHtml}
+    ${bestHtml}
+    ${worstHtml}
   `;
 
   chartsEl.innerHTML = "";

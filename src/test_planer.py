@@ -1,4 +1,5 @@
 """Tests for Planer license and date helpers."""
+import json
 import tempfile
 import unittest
 from datetime import date, timedelta
@@ -67,6 +68,54 @@ class DateTests(unittest.TestCase):
         start = "2026-05-25"
         self.assertEqual(add_days(start, 7), "2026-06-01")
         self.assertEqual(add_days(start, -7), "2026-05-18")
+
+
+class AutoBackupTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.license_dir = Path(self.tmp.name)
+
+    def test_auto_backup_writes_and_prunes(self):
+        from launcher import Api
+
+        backup_dir = self.license_dir / "backups"
+        with patch("license.LICENSE_DIR", self.license_dir):
+            api = Api()
+            payload = json.dumps({"version": 1, "state": {"weekStart": "2026-05-25"}})
+            res = api.auto_backup(payload)
+            self.assertTrue(res["ok"], res.get("error"))
+            self.assertTrue(Path(res["path"]).is_file())
+
+            for i in range(12):
+                res = api.auto_backup(payload)
+                self.assertTrue(res["ok"], res.get("error"))
+
+            files = list(backup_dir.glob("planer-auto-*.planer"))
+            self.assertLessEqual(len(files), 10)
+
+
+class SaveTextFileTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.out_path = Path(self.tmp.name) / "planer-stats.csv"
+
+    def test_save_text_file_writes_csv(self):
+        from launcher import Api
+
+        out_path = self.out_path
+
+        class FakeWindow:
+            def create_file_dialog(self, *_args, **_kwargs):
+                return str(out_path)
+
+        with patch("webview.windows", [FakeWindow()]):
+            api = Api()
+            res = api.save_text_file("day;done\r\nMon;1", "planer-stats.csv")
+
+        self.assertTrue(res["ok"], res.get("error"))
+        text = self.out_path.read_text(encoding="utf-8-sig")
+        self.assertIn("day;done", text)
+        self.assertIn("Mon;1", text)
 
 
 if __name__ == "__main__":
