@@ -163,8 +163,13 @@ function getMatrixLinkLabel(quadrantId, index) {
 
 function restoreMatrixFromWeekly(quadrantId, index) {
   captureUndo();
+  const link = state.matrixLinks?.[quadrantId]?.[index];
+  if (link) {
+    state.weeks = PlanerMatrixLinks.clearWeeklyTaskForLink(state.weeks, link);
+  }
   restoreMatrixTaskAt(quadrantId, index);
   renderMatrix?.();
+  renderWeekly();
   scheduleSave();
 }
 

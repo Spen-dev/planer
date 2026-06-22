@@ -1,5 +1,8 @@
 """Tests for Planer license and date helpers."""
 import json
+import shutil
+import subprocess
+import sys
 import tempfile
 import unittest
 from datetime import date, timedelta
@@ -52,7 +55,29 @@ class LicenseTests(unittest.TestCase):
             ok, err = activate_license(key)
             self.assertTrue(ok, err)
             self.assertTrue(license_file.is_file())
+            data = json.loads(license_file.read_text(encoding="utf-8"))
+            self.assertEqual(data.get("key"), key)
+            self.assertEqual(data.get("token"), license_token(key))
             self.assertTrue(is_licensed())
+
+    def test_token_only_legacy_not_licensed(self):
+        key = make_license_key("legacy-test")
+        license_file = self.license_dir / "license.dat"
+        license_file.write_text(
+            json.dumps({"token": license_token(key)}, ensure_ascii=False),
+            encoding="utf-8",
+        )
+        with patch("license.LICENSE_DIR", self.license_dir), patch("license.LICENSE_FILE", license_file):
+            self.assertFalse(is_licensed())
+
+    def test_invalid_key_not_licensed(self):
+        license_file = self.license_dir / "license.dat"
+        license_file.write_text(
+            json.dumps({"key": "PLAN-0000-0000-0000-0000", "token": "a" * 64}, ensure_ascii=False),
+            encoding="utf-8",
+        )
+        with patch("license.LICENSE_DIR", self.license_dir), patch("license.LICENSE_FILE", license_file):
+            self.assertFalse(is_licensed())
 
 
 class DateTests(unittest.TestCase):
@@ -149,6 +174,28 @@ class DonationTests(unittest.TestCase):
         self.assertIn("300", text)
         self.assertIn("+79001234567", text)
         self.assertIn("Spen Dev", text)
+
+
+class JsStorageTests(unittest.TestCase):
+    def test_js_autotests(self):
+        src_dir = Path(__file__).resolve().parent
+        node_script = src_dir / "test_js" / "run_tests.mjs"
+        py_script = src_dir / "test_js" / "run_tests.py"
+        node = shutil.which("node")
+        if node:
+            cmd = [node, str(node_script)]
+        else:
+            cmd = [sys.executable, str(py_script)]
+        result = subprocess.run(
+            cmd,
+            cwd=str(src_dir),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if result.returncode != 0:
+            msg = (result.stdout + result.stderr).strip()
+            self.fail(f"JS tests failed:\n{msg}")
 
 
 if __name__ == "__main__":

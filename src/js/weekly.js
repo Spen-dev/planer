@@ -34,6 +34,7 @@ function autoResizeDayFieldInput(input) {
 }
 
 let activeDayFieldEdit = null;
+let activeDayFieldEditOriginal = "";
 
 function startDayFieldEdit(wrap, options = {}) {
   if (!wrap) return;
@@ -61,12 +62,48 @@ function startDayFieldEdit(wrap, options = {}) {
   }
   applyDayFieldInk(label, input);
   activeDayFieldEdit = wrap;
+  activeDayFieldEditOriginal = label.textContent || "";
   beginUndoCapture?.();
 }
 
 function hasActiveTextSelection() {
   const sel = window.getSelection();
   return !!(sel && !sel.isCollapsed && sel.toString().length > 0);
+}
+
+function cancelDayFieldEdit(wrap) {
+  if (!wrap?.classList.contains("is-editing")) return;
+
+  const label = wrap.querySelector(".day-text-label");
+  const input = wrap.querySelector(".day-text-input");
+  if (!label || !input) return;
+
+  const originalText = activeDayFieldEditOriginal;
+  label.textContent = originalText;
+  input.value = originalText;
+  applyDayFieldInk(label, input);
+  wrap.classList.remove("is-editing");
+  input.hidden = true;
+  label.hidden = false;
+
+  const dayIdx = Number(wrap.dataset.day);
+  if (!Number.isNaN(dayIdx)) {
+    if (wrap.dataset.task !== undefined) {
+      const taskIdx = Number(wrap.dataset.task);
+      getWeek(state.weekStart).days[dayIdx].tasks[taskIdx].text = originalText;
+      if (!originalText.trim()) {
+        restoreMatrixForWeeklyTask(state.weekStart, dayIdx, taskIdx);
+      } else {
+        syncMatrixForWeeklyTask(state.weekStart, dayIdx, taskIdx);
+      }
+      refreshDayStats(dayIdx);
+    } else if (wrap.dataset.note !== undefined) {
+      getWeek(state.weekStart).days[dayIdx].notes[Number(wrap.dataset.note)] = originalText;
+    }
+  }
+
+  if (activeDayFieldEdit === wrap) activeDayFieldEdit = null;
+  endUndoCapture?.();
 }
 
 function commitDayFieldEdit(wrap) {
@@ -380,10 +417,16 @@ function moveTask(fromDay, fromTask, toDay, toTask) {
   if (!dst.text.trim() && !dst.done) {
     week.days[toDay].tasks[toTask] = { ...src };
     week.days[fromDay].tasks[fromTask] = { text: "", done: false };
+    state.matrixLinks = PlanerMatrixLinks.relocateMatrixLinksForWeeklyMove(
+      state.matrixLinks, state.weekStart, fromDay, fromTask, toDay, toTask,
+    );
     restoreMatrixForWeeklyTask(state.weekStart, fromDay, fromTask);
   } else {
     week.days[fromDay].tasks[fromTask] = { ...dst };
     week.days[toDay].tasks[toTask] = { ...src };
+    state.matrixLinks = PlanerMatrixLinks.relocateMatrixLinksForWeeklyMove(
+      state.matrixLinks, state.weekStart, fromDay, fromTask, toDay, toTask,
+    );
   }
   renderWeekly();
   scheduleSave();
@@ -502,9 +545,7 @@ function setupWeeklyEvents() {
     if (!input.classList?.contains("day-text-input")) return;
     if (e.key === "Escape") {
       e.preventDefault();
-      const wrap = input.closest(".day-text-wrap");
-      input.value = wrap.querySelector(".day-text-label")?.textContent || "";
-      commitDayFieldEdit(wrap);
+      cancelDayFieldEdit(input.closest(".day-text-wrap"));
       return;
     }
     if (e.key === "Enter" && !e.shiftKey && input.closest(".task-row")) {
@@ -693,6 +734,7 @@ function openSearchResult(item) {
   document.querySelector('.tab[data-tab="weekly"]')?.click();
   state.weekStart = item.weekStart;
   renderWeekly();
+  scheduleSave();
   scheduleFitWeeklyWindow();
   requestAnimationFrame(() => {
     const selector = item.kind === "task"

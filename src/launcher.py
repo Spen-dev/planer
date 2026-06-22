@@ -330,10 +330,21 @@ class Api:
         return {"ok": False, "error": error}
 
     def clear_license(self) -> dict:
-        from license import clear_license
+        return {"ok": False, "error": "Сброс лицензии отключён в приложении."}
 
-        clear_license()
-        return {"ok": True}
+    def get_device_secret(self) -> dict:
+        import secrets
+
+        from license import LICENSE_DIR
+
+        try:
+            path = LICENSE_DIR / "device.secret"
+            LICENSE_DIR.mkdir(parents=True, exist_ok=True)
+            if not path.is_file():
+                path.write_text(secrets.token_hex(32), encoding="utf-8")
+            return {"ok": True, "secret": path.read_text(encoding="utf-8").strip()}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
 
     def get_app_info(self) -> dict:
         from license import LICENSE_DIR

@@ -344,6 +344,10 @@ function setupMatrixEvents() {
     task.text = el.value;
     state.matrix[qId][idx] = task;
     if (isMatrixTaskTransferred(qId, idx)) {
+      const link = state.matrixLinks[qId]?.[idx];
+      if (link) {
+        state.weeks = PlanerMatrixLinks.clearWeeklyTaskForLink(state.weeks, link);
+      }
       clearMatrixTaskTransferred(qId, idx);
       el.closest(".matrix-row")?.classList.remove("transferred");
       const sendBtn = el.closest(".matrix-row")?.querySelector(".matrix-send-btn");

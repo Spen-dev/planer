@@ -58,15 +58,20 @@ def is_licensed() -> bool:
         return False
     try:
         data = json.loads(LICENSE_FILE.read_text(encoding="utf-8"))
-        return is_valid_token(str(data.get("token", "")))
+        key = normalize_key(str(data.get("key", "")))
+        token = str(data.get("token", ""))
+        if not key or not validate_license_key(key):
+            return False
+        return token == license_token(key)
     except (OSError, json.JSONDecodeError):
         return False
 
 
 def save_license(key: str) -> None:
     LICENSE_DIR.mkdir(parents=True, exist_ok=True)
+    normalized = normalize_key(key)
     LICENSE_FILE.write_text(
-        json.dumps({"token": license_token(key)}, ensure_ascii=False),
+        json.dumps({"key": normalized, "token": license_token(normalized)}, ensure_ascii=False),
         encoding="utf-8",
     )
 

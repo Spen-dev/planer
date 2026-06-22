@@ -92,7 +92,7 @@
 
   <div class="app-bottom-gap" aria-hidden="true"></div>
 
-  <div id="licenseOverlay" class="overlay" hidden>
+  <div id="licenseOverlay" class="overlay" hidden data-escape="block">
     <div class="overlay-card">
       <div class="overlay-header">
         <h2>Активация Планера</h2>
@@ -274,7 +274,7 @@
     </div>
   </div>
 
-  <div id="passwordOverlay" class="overlay" hidden>
+  <div id="passwordOverlay" class="overlay" hidden data-escape="block">
     <div class="overlay-card">
       <div class="overlay-header">
         <h2 id="passwordTitle">Пароль шифрования</h2>
@@ -298,6 +298,8 @@
     </div>
   </div>
 
+  <script src="js/storage.js"></script>
+  <script src="js/matrix_links.js"></script>
   <script src="js/core.js"></script>
   <script src="js/weekly.js"></script>
   <script src="js/matrix.js"></script>

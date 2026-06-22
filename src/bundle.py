@@ -7,6 +7,8 @@ html = (ROOT / "index.html").read_text(encoding="utf-8")
 css = (ROOT / "styles.css").read_text(encoding="utf-8")
 
 js_files = [
+    ROOT / "js" / "storage.js",
+    ROOT / "js" / "matrix_links.js",
     ROOT / "js" / "core.js",
     ROOT / "js" / "weekly.js",
     ROOT / "js" / "matrix.js",

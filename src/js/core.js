@@ -1,8 +1,7 @@
 const APP_VERSION = "1.1.0";
-const STORAGE_KEY = "planer-data-v2";
-const CRYPTO_META_KEY = "planer-crypto-v1";
+const STORAGE_KEY = PlanerStorage.STORAGE_KEY;
+const CRYPTO_META_KEY = PlanerStorage.CRYPTO_META_KEY;
 const REMEMBER_KEY = "planer-remember-v1";
-const DEVICE_KEY = "planer-device-key-v1";
 const TASKS_PER_DAY = 15;
 const NOTES_MAX = 15;
 const INITIAL_TASK_ROWS = 10;
@@ -210,8 +209,6 @@ function defaultMatrixClientHeight() {
 
 let state = defaultState();
 let sessionPassword = null;
-let storageUnlockVerified = false;
-let saveTimer = null;
 let fitTimer = null;
 let saveStatusTimer = null;
 let weeklyEventsReady = false;
@@ -336,11 +333,11 @@ function setSaveStatus(mode) {
 }
 
 function scheduleSave() {
-  setSaveStatus("saving");
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => {
-    void saveState();
-  }, 400);
+  PlanerStorage.scheduleSave(() => saveState(), () => setSaveStatus("saving"));
+}
+
+async function flushPendingSave() {
+  await PlanerStorage.flushPendingSave(() => saveState());
 }
 
 function scheduleFitWeeklyWindow(expandOnly = false, initial = false) {
@@ -438,50 +435,16 @@ function defaultState() {
   };
 }
 
-function b64(bytes) {
-  let binary = "";
-  bytes.forEach((b) => { binary += String.fromCharCode(b); });
-  return btoa(binary);
-}
-
-function b64dec(str) {
-  const binary = atob(str);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
-  return bytes;
-}
-
-async function deriveKey(password, salt) {
-  const enc = new TextEncoder();
-  const baseKey = await crypto.subtle.importKey(
-    "raw", enc.encode(password), "PBKDF2", false, ["deriveKey"],
-  );
-  return crypto.subtle.deriveKey(
-    { name: "PBKDF2", salt, iterations: 120000, hash: "SHA-256" },
-    baseKey, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"],
-  );
-}
-
 async function encryptText(text, password) {
-  const salt = crypto.getRandomValues(new Uint8Array(16));
-  const iv = crypto.getRandomValues(new Uint8Array(12));
-  const key = await deriveKey(password, salt);
-  const cipher = await crypto.subtle.encrypt(
-    { name: "AES-GCM", iv }, key, new TextEncoder().encode(text),
-  );
-  return { v: 1, encrypted: true, salt: b64(salt), iv: b64(iv), data: b64(new Uint8Array(cipher)) };
+  return PlanerStorage.encryptText(text, password);
 }
 
 async function decryptText(payload, password) {
-  const key = await deriveKey(password, b64dec(payload.salt));
-  const plain = await crypto.subtle.decrypt(
-    { name: "AES-GCM", iv: b64dec(payload.iv) }, key, b64dec(payload.data),
-  );
-  return new TextDecoder().decode(plain);
+  return PlanerStorage.decryptText(payload, password);
 }
 
 function hasCryptoSetup() {
-  return Boolean(localStorage.getItem(CRYPTO_META_KEY));
+  return PlanerStorage.hasCryptoSetup(localStorage);
 }
 
 function parsePlainState(raw) {
@@ -507,75 +470,33 @@ function parsePlainState(raw) {
       ...defaultAppearance(),
       ...parsed.appearance,
       fontColor: parsed.appearance?.fontColor || null,
-      dayColors: parsed.appearance?.dayColors?.length === 7
-        ? parsed.appearance.dayColors.map((c, i) => ({
-            ...COLOR_PRESETS.default[i],
-            ...c,
-            text: c.text || contrastText(c.bg || COLOR_PRESETS.default[i].bg),
-          }))
-        : defaultAppearance().dayColors,
+      dayColors: normalizeDayColors(parsed.appearance?.dayColors),
     },
   };
 }
 
+function normalizeDayColors(colors) {
+  if (!Array.isArray(colors) || !colors.length) return defaultAppearance().dayColors;
+  return DEFAULT_DAY_THEMES.map((base, i) => {
+    const c = colors[i] || COLOR_PRESETS.default[i] || base;
+    return {
+      ...COLOR_PRESETS.default[i],
+      ...c,
+      text: c.text || contrastText(c.bg || COLOR_PRESETS.default[i].bg),
+    };
+  });
+}
+
 async function loadState() {
-  let raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) raw = localStorage.getItem("planer-data-v1");
-  if (!raw) {
-    storageUnlockVerified = !hasCryptoSetup();
-    return defaultState();
-  }
-
-  let parsed;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    storageUnlockVerified = !hasCryptoSetup();
-    return defaultState();
-  }
-
-  if (parsed?.encrypted) {
-    if (!sessionPassword) {
-      storageUnlockVerified = false;
-      throw new Error("NO_PASSWORD");
-    }
-    try {
-      const text = await decryptText(parsed, sessionPassword);
-      storageUnlockVerified = true;
-      return parsePlainState(text);
-    } catch (err) {
-      storageUnlockVerified = false;
-      if (isLoadStateError(err?.message)) throw err;
-      throw new Error("WRONG_PASSWORD");
-    }
-  }
-
-  storageUnlockVerified = true;
-  return parsePlainState(raw);
+  return PlanerStorage.loadState(localStorage, sessionPassword, parsePlainState, defaultState);
 }
 
 function isLoadStateError(message) {
-  return message === "NO_PASSWORD" || message === "WRONG_PASSWORD";
+  return PlanerStorage.isLoadStateError(message);
 }
 
 async function saveState() {
-  if (hasCryptoSetup() && !storageUnlockVerified) {
-    setSaveStatus("error");
-    return;
-  }
-  try {
-    const plain = JSON.stringify(state);
-    if (sessionPassword) {
-      const encrypted = await encryptText(plain, sessionPassword);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(encrypted));
-      localStorage.setItem(CRYPTO_META_KEY, "1");
-    } else {
-      localStorage.setItem(STORAGE_KEY, plain);
-    }
-    setSaveStatus("saved");
-  } catch {
-    setSaveStatus("error");
-  }
+  return PlanerStorage.saveState(localStorage, sessionPassword, state, setSaveStatus);
 }
 
 function mondayOf(date) {

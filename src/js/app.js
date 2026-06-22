@@ -1,5 +1,30 @@
+const DEVICE_SECRET_KEY = "planer-device-secret-v1";
+let deviceSecret = null;
+
+async function initDeviceSecret() {
+  if (deviceSecret) return deviceSecret;
+  if (isDesktopShell()) {
+    const hasApi = await waitForPyWebViewApi();
+    if (hasApi && window.pywebview?.api?.get_device_secret) {
+      const res = await window.pywebview.api.get_device_secret();
+      if (res?.ok && res.secret) {
+        deviceSecret = res.secret;
+        return deviceSecret;
+      }
+    }
+  }
+  let secret = localStorage.getItem(DEVICE_SECRET_KEY);
+  if (!secret) {
+    secret = `${crypto.randomUUID()}${crypto.randomUUID()}`;
+    localStorage.setItem(DEVICE_SECRET_KEY, secret);
+  }
+  deviceSecret = secret;
+  return deviceSecret;
+}
+
 async function saveRememberedPassword(password) {
-  const wrapped = await encryptText(password, DEVICE_KEY);
+  await initDeviceSecret();
+  const wrapped = await encryptText(password, deviceSecret);
   localStorage.setItem(REMEMBER_KEY, JSON.stringify(wrapped));
 }
 
@@ -7,7 +32,8 @@ async function tryRememberedPassword() {
   const raw = localStorage.getItem(REMEMBER_KEY);
   if (!raw) return false;
   try {
-    sessionPassword = await decryptText(JSON.parse(raw), DEVICE_KEY);
+    await initDeviceSecret();
+    sessionPassword = await decryptText(JSON.parse(raw), deviceSecret);
     await loadState();
     return true;
   } catch {
@@ -25,11 +51,6 @@ function showLicenseOverlay() {
 
 async function ensureLicense() {
   if (!isDesktopShell()) return true;
-
-  // Desktop EXE loads main app only after Python-side license check.
-  if (window.__PLANER_DESKTOP__ || new URLSearchParams(location.search).get("desktop") === "1") {
-    return true;
-  }
 
   document.body.classList.add("boot-pending");
 
@@ -105,7 +126,7 @@ function showPasswordOverlay(mode) {
           return;
         }
         sessionPassword = pass;
-        storageUnlockVerified = !hasCryptoSetup();
+        PlanerStorage.setStorageUnlockVerified(!hasCryptoSetup());
         if (document.getElementById("rememberPassword").checked) {
           await saveRememberedPassword(pass);
         } else {
@@ -125,9 +146,13 @@ function showPasswordOverlay(mode) {
         }
         hideOverlay(document.getElementById("passwordOverlay"));
         resolve(pass);
-      } catch {
+      } catch (err) {
         sessionPassword = null;
-        passwordError.textContent = "Неверный пароль. Сохранённые данные не изменены.";
+        if (err?.message === PlanerStorage.LOAD_ERRORS.CORRUPT_STORAGE) {
+          passwordError.textContent = "Данные повреждены. Сохранение отключено, чтобы не перезаписать файл.";
+        } else {
+          passwordError.textContent = "Неверный пароль. Сохранённые данные не изменены.";
+        }
         passwordError.hidden = false;
       }
     };
@@ -135,8 +160,10 @@ function showPasswordOverlay(mode) {
 }
 
 async function ensurePassword() {
-  if (hasCryptoSetup() && (await tryRememberedPassword())) return;
-  if (!hasCryptoSetup()) {
+  const rememberWorked = await tryRememberedPassword();
+  const mode = PlanerStorage.resolvePasswordMode(localStorage, rememberWorked);
+  if (mode === "done") return;
+  if (mode === "setup") {
     await showPasswordOverlay("setup");
     return;
   }
@@ -171,9 +198,11 @@ function setupKeyboardShortcuts() {
       goToTodayWeek();
     } else if (e.key === "Escape") {
       const overlays = [...document.querySelectorAll(".overlay:not([hidden])")];
+      const top = overlays[overlays.length - 1];
+      if (top?.dataset.escape === "block") return;
       if (overlays.length) {
         e.preventDefault();
-        hideOverlay(overlays[overlays.length - 1]);
+        hideOverlay(top);
       }
     }
   });
@@ -198,10 +227,32 @@ function setupUndoShortcut() {
   });
 }
 
+function setupFlushOnExit() {
+  window.addEventListener("beforeunload", () => {
+    void flushPendingSave();
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") void flushPendingSave();
+  });
+}
+
 async function bootApp() {
   if (!(await ensureLicense())) return;
+  await initDeviceSecret();
   await ensurePassword();
-  state = await loadState();
+  try {
+    state = await loadState();
+  } catch (err) {
+    if (err?.message === PlanerStorage.LOAD_ERRORS.CORRUPT_STORAGE) {
+      PlanerStorage.blockStorageSave();
+      alert(
+        "Не удалось прочитать сохранённые данные. Файл повреждён или пароль не подходит.\n"
+        + "Сохранение отключено, чтобы не перезаписать данные.",
+      );
+      return;
+    }
+    throw err;
+  }
   if (!state.appearance) state.appearance = defaultAppearance();
   applyAppearance();
   setupWeeklyEvents();
@@ -219,6 +270,7 @@ async function bootApp() {
   setupStatsEvents();
   initFeatures();
   initDonate();
+  setupFlushOnExit();
 }
 
 function startApp() {

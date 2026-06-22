@@ -252,7 +252,13 @@ async function changePassword() {
   }
 
   sessionPassword = newPass;
-  await saveState();
+  const saved = await saveState();
+  if (!saved) {
+    sessionPassword = oldPass;
+    errEl.textContent = "Не удалось сохранить новый пароль. Пароль не изменён.";
+    errEl.hidden = false;
+    return;
+  }
   if (document.getElementById("rememberPassword")?.checked || localStorage.getItem(REMEMBER_KEY)) {
     await saveRememberedPassword(newPass);
   }
