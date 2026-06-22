@@ -13,6 +13,7 @@ js_files = [
     ROOT / "js" / "stats.js",
     ROOT / "js" / "features.js",
     ROOT / "js" / "settings.js",
+    ROOT / "js" / "donate.js",
     ROOT / "js" / "protect.js",
     ROOT / "js" / "app.js",
 ]

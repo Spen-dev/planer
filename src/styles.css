@@ -79,9 +79,16 @@ body.boot-pending main {
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.55rem;
   grid-column: 3;
   justify-self: end;
+  flex-shrink: 0;
+}
+
+.header-action-icons {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
   flex-shrink: 0;
 }
 
@@ -216,15 +223,6 @@ body.boot-pending main {
   }
 }
 
-.app-brand {
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: color-mix(in srgb, var(--text) 28%, transparent);
-  letter-spacing: 0.02em;
-  user-select: none;
-  pointer-events: none;
-}
-
 .app-motto {
   margin: 0;
   font-size: 0.82rem;
@@ -276,18 +274,6 @@ body.boot-pending main {
   box-shadow:
     0 2px 14px rgba(0, 0, 0, 0.22),
     inset 0 1px 0 rgba(255, 255, 255, 0.07);
-}
-
-.app-build-tag {
-  font-size: 0.78rem;
-  font-weight: 800;
-  color: #ffffff;
-  background: #c62828;
-  padding: 0.12rem 0.35rem;
-  border-radius: 4px;
-  letter-spacing: 0.04em;
-  user-select: none;
-  pointer-events: none;
 }
 
 .tab {
@@ -989,6 +975,95 @@ body.view-stats .stats-layout {
   display: block;
 }
 
+.btn-icon-donate {
+  border-color: rgba(198, 40, 40, 0.38);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, #c62828 12%, var(--surface)) 0%,
+    color-mix(in srgb, #c62828 6%, var(--surface)) 100%
+  );
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.btn-icon-donate:hover {
+  border-color: rgba(198, 40, 40, 0.58);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, #c62828 18%, var(--surface)) 0%,
+    color-mix(in srgb, #c62828 10%, var(--surface)) 100%
+  );
+}
+
+.btn-icon-donate .btn-icon-donate-svg {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+.btn-icon-donate .donate-heart {
+  fill: #c62828;
+}
+
+.btn-icon-donate .donate-ruble {
+  fill: #fff;
+}
+
+[data-theme="dark"] .btn-icon-donate {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .btn-icon-donate .donate-ruble {
+  fill: #fff;
+}
+
+.donate-presets {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.45rem;
+  margin-bottom: 0.75rem;
+}
+
+.donate-preset-btn {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 0.45rem 0.55rem;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.donate-preset-btn:hover {
+  background: var(--surface-hover);
+}
+
+.donate-preset-btn.is-selected {
+  border-color: color-mix(in srgb, #c62828 55%, var(--border));
+  background: color-mix(in srgb, #c62828 10%, var(--surface));
+  color: #c62828;
+}
+
+.donate-custom-field {
+  margin-bottom: 0.65rem;
+}
+
+.donate-success {
+  color: #2e7d32;
+  font-size: 0.85rem;
+  margin: -0.15rem 0 0.65rem !important;
+}
+
+.donate-actions {
+  flex-direction: column;
+}
+
+.donate-actions .btn-secondary:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
 .btn-secondary {
   padding: 0.38rem 0.55rem;
   font-size: 0.78rem;
@@ -1652,18 +1727,6 @@ body.view-stats .stats-layout {
 .about-muted {
   color: var(--muted);
   word-break: break-all;
-}
-
-.about-build-tag {
-  display: inline-block;
-  font-size: 0.68rem;
-  font-weight: 700;
-  color: #fff;
-  background: #c62828;
-  padding: 0.05rem 0.3rem;
-  border-radius: 4px;
-  vertical-align: middle;
-  margin-left: 0.25rem;
 }
 
 .about-link {

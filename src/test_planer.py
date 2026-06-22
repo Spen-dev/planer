@@ -118,5 +118,38 @@ class SaveTextFileTests(unittest.TestCase):
         self.assertIn("Mon;1", text)
 
 
+class DonationTests(unittest.TestCase):
+    def test_normalize_amount(self):
+        from donation import normalize_amount
+
+        cfg = {"min_amount": 50, "max_amount": 100000}
+        amount, error = normalize_amount(300, cfg)
+        self.assertIsNone(error)
+        self.assertEqual(amount, 300)
+
+        amount, error = normalize_amount(10, cfg)
+        self.assertIsNone(amount)
+        self.assertIn("Минимальная", error or "")
+
+    def test_yoomoney_url(self):
+        from donation import yoomoney_url
+
+        url = yoomoney_url("410011880000000", 500, "planer")
+        self.assertIn("yoomoney.ru/quickpay/confirm.xml", url)
+        self.assertIn("receiver=410011880000000", url)
+        self.assertIn("sum=500", url)
+
+    def test_sbp_copy_text(self):
+        from donation import sbp_copy_text
+
+        text = sbp_copy_text(
+            {"sbp_phone": "+79001234567", "sbp_name": "Spen Dev"},
+            300,
+        )
+        self.assertIn("300", text)
+        self.assertIn("+79001234567", text)
+        self.assertIn("Spen Dev", text)
+
+
 if __name__ == "__main__":
     unittest.main()

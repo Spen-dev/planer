@@ -381,6 +381,75 @@ class Api:
         except Exception as e:
             return {"ok": False, "error": str(e)}
 
+    def copy_text(self, text: str) -> dict:
+        try:
+            import subprocess
+
+            subprocess.run("clip", input=str(text).encode("utf-16le"), check=True, shell=True)
+            return {"ok": True}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    def get_donation_info(self) -> dict:
+        from donation import donation_config_path, load_donation_config
+        from license import LICENSE_DIR
+
+        cfg = load_donation_config(LICENSE_DIR)
+        wallet = (cfg.get("yoomoney_wallet") or "").strip()
+        phone = (cfg.get("sbp_phone") or "").strip()
+        return {
+            "ok": True,
+            "message": cfg.get("message") or "",
+            "presets": cfg.get("presets") or [100, 300, 500, 1000],
+            "minAmount": cfg.get("min_amount") or 50,
+            "maxAmount": cfg.get("max_amount") or 100000,
+            "yoomoneyEnabled": bool(wallet),
+            "sbpEnabled": bool(phone),
+            "yoomoneyLabel": cfg.get("yoomoney_label") or "Оплатить через ЮMoney",
+            "sbpLabel": cfg.get("sbp_label") or "СБП — скопировать номер",
+            "configPath": str(donation_config_path(LICENSE_DIR)),
+        }
+
+    def open_donation_payment(self, amount: float, method: str = "yoomoney") -> dict:
+        import webbrowser
+
+        from donation import load_donation_config, normalize_amount, yoomoney_url
+        from license import LICENSE_DIR
+
+        cfg = load_donation_config(LICENSE_DIR)
+        normalized, error = normalize_amount(amount, cfg)
+        if error:
+            return {"ok": False, "error": error}
+        wallet = (cfg.get("yoomoney_wallet") or "").strip()
+        if not wallet:
+            return {
+                "ok": False,
+                "error": "ЮMoney не настроен. Добавьте yoomoney_wallet в donation.json.",
+            }
+        webbrowser.open(yoomoney_url(wallet, normalized))
+        return {"ok": True, "method": "yoomoney", "amount": normalized}
+
+    def copy_donation_details(self, amount: float = 0) -> dict:
+        from donation import load_donation_config, normalize_amount, sbp_copy_text
+        from license import LICENSE_DIR
+
+        cfg = load_donation_config(LICENSE_DIR)
+        phone = (cfg.get("sbp_phone") or "").strip()
+        if not phone:
+            return {
+                "ok": False,
+                "error": "СБП не настроен. Добавьте sbp_phone в donation.json.",
+            }
+        normalized = None
+        if amount:
+            normalized, error = normalize_amount(amount, cfg)
+            if error:
+                return {"ok": False, "error": error}
+        copied = self.copy_text(sbp_copy_text(cfg, normalized))
+        if not copied.get("ok"):
+            return copied
+        return {"ok": True, "amount": normalized}
+
     def get_autostart(self) -> dict:
         try:
             import winreg

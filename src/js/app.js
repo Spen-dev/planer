@@ -218,6 +218,7 @@ async function bootApp() {
   setupMatrixEvents();
   setupStatsEvents();
   initFeatures();
+  initDonate();
 }
 
 function startApp() {
