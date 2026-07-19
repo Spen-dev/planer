@@ -95,7 +95,8 @@ python generate_key.py customer-001
 
 ```
 planer/
-  Planer.exe    — готовое приложение (один файл)
+  Planer.exe    — готовое приложение для Windows (один файл)
+  Planer.apk    — готовое приложение для Android (debug)
   android/      — приложение для Android (WebView)
   src/          — исходники и сборка
     js/         — модули интерфейса
@@ -111,6 +112,8 @@ cd android
 ```
 
 Откройте `android/` в Android Studio и соберите APK.
+
+Готовый debug-APK для Android: **`Planer.apk`** в корне репозитория.
 
 
 ## Сборка exe

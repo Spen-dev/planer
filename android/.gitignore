@@ -2,6 +2,7 @@
 /.gradle
 /local.properties
 /.sdk
+/tools
 /.idea
 *.iml
 /captures
