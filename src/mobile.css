@@ -1,0 +1,101 @@
+/* Mobile / Android layout adjustments */
+body.planer-android {
+  height: auto;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+body.planer-android .app-header {
+  grid-template-columns: 1fr;
+  padding: 0.5rem 0.65rem;
+  gap: 0.45rem;
+}
+
+body.planer-android .header-motto {
+  order: 3;
+}
+
+body.planer-android .header-actions {
+  order: 2;
+  justify-content: space-between;
+  width: 100%;
+}
+
+body.planer-android .tabs {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  max-width: 100%;
+}
+
+body.planer-android .tabs::-webkit-scrollbar {
+  display: none;
+}
+
+body.planer-android .tab {
+  flex: 0 0 auto;
+  font-size: 0.82rem;
+  padding: 0.45rem 0.65rem;
+}
+
+body.planer-android main {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: visible;
+}
+
+body.planer-android .week-toolbar,
+body.planer-android .stats-toolbar,
+body.planer-android .matrix-toolbar {
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+body.planer-android .days-grid {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
+  padding-bottom: 0.35rem;
+}
+
+body.planer-android .day-card {
+  scroll-snap-align: start;
+  min-width: min(280px, 82vw);
+}
+
+body.planer-android .matrix-grid {
+  grid-template-columns: 1fr;
+}
+
+body.planer-android .overlay-card {
+  width: min(400px, calc(100vw - 1.5rem));
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+}
+
+body.planer-android #printBtn,
+body.planer-android .settings-desktop-only {
+  display: none !important;
+}
+
+body.planer-android .app-motto {
+  font-size: 0.78rem;
+}
+
+body.planer-android .week-label input[type="date"] {
+  max-width: 100%;
+}
+
+@media (max-width: 600px) {
+  body.planer-android .header-action-icons {
+    gap: 0.15rem;
+  }
+
+  body.planer-android .btn-icon {
+    width: 2.1rem;
+    height: 2.1rem;
+  }
+}

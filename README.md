@@ -96,9 +96,22 @@ python generate_key.py customer-001
 ```
 planer/
   Planer.exe    — готовое приложение (один файл)
+  android/      — приложение для Android (WebView)
   src/          — исходники и сборка
     js/         — модули интерфейса
 ```
+
+## Android
+
+См. [android/README.md](android/README.md). Кратко:
+
+```powershell
+cd android
+.\sync-web.ps1
+```
+
+Откройте `android/` в Android Studio и соберите APK.
+
 
 ## Сборка exe
 
