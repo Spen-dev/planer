@@ -17,6 +17,7 @@ from license import (
     make_license_key,
     validate_license_key,
 )
+from paths import app_data_dir
 
 
 def monday_of(d: date) -> date:
@@ -174,6 +175,13 @@ class DonationTests(unittest.TestCase):
         self.assertIn("300", text)
         self.assertIn("+79001234567", text)
         self.assertIn("Spen Dev", text)
+
+
+class PathsTests(unittest.TestCase):
+    def test_app_data_dir_ends_with_planer(self):
+        path = app_data_dir()
+        self.assertEqual(path.name, "Planer")
+        self.assertTrue(path.is_absolute())
 
 
 class JsStorageTests(unittest.TestCase):

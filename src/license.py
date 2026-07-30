@@ -4,15 +4,13 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
-import os
 import re
 from pathlib import Path
 
+from paths import LICENSE_DIR, LICENSE_FILE
+
 # Change this secret before distributing keys to customers.
 LICENSE_SECRET = b"planer-protect-v1-spen-dev-change-me"
-
-LICENSE_DIR = Path(os.environ.get("APPDATA", Path.home())) / "Planer"
-LICENSE_FILE = LICENSE_DIR / "license.dat"
 
 KEY_PATTERN = re.compile(
     r"^PLAN-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}$"

@@ -3,6 +3,16 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
+import java.util.Properties
+
+val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val hasReleaseKeystore = keystorePropertiesFile.isFile
+if (hasReleaseKeystore) {
+    val raw = keystorePropertiesFile.readText(Charsets.UTF_8).removePrefix("\uFEFF")
+    keystoreProperties.load(raw.byteInputStream())
+}
+
 android {
     namespace = "com.spen.planer"
     compileSdk = 34
@@ -15,6 +25,19 @@ android {
         versionName = "1.1.0"
     }
 
+    signingConfigs {
+        if (hasReleaseKeystore) {
+            create("release") {
+                val storePath = keystoreProperties.getProperty("storeFile")?.trim().orEmpty()
+                require(storePath.isNotEmpty()) { "storeFile is missing in keystore.properties" }
+                storeFile = rootProject.file(storePath)
+                storePassword = keystoreProperties.getProperty("storePassword")?.trim()
+                keyAlias = keystoreProperties.getProperty("keyAlias")?.trim()
+                keyPassword = keystoreProperties.getProperty("keyPassword")?.trim()
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -22,6 +45,9 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+            if (hasReleaseKeystore) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 

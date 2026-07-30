@@ -7,7 +7,6 @@ from datetime import datetime
 from pathlib import Path
 
 APP_VERSION = "1.1.0"
-AUTOSTART_NAME = "Planer"
 INITIAL_TASK_ROWS = 10
 INITIAL_NOTE_ROWS = 5
 WEEKLY_CLIENT_WIDTH = 1280
@@ -148,16 +147,6 @@ def eula_path() -> Path | None:
     return None
 
 
-def open_os_path(path: Path, *, reveal: bool = False) -> None:
-    import subprocess
-
-    resolved = path.resolve()
-    if reveal and resolved.is_file():
-        subprocess.run(["explorer", "/select,", str(resolved)], check=False)
-        return
-    os.startfile(str(resolved))
-
-
 def app_dir() -> str:
     if getattr(sys, "frozen", False):
         return sys._MEIPASS
@@ -180,47 +169,14 @@ def index_url() -> str:
     return url
 
 
-def icon_path() -> str | None:
-    path = os.path.join(app_dir(), "planner.ico")
-    return path if os.path.isfile(path) else None
+def tray_icon_path() -> str | None:
+    from platform_support import icon_path as platform_icon_path
 
-
-def _autostart_key():
-    import winreg
-
-    return winreg.OpenKey(
-        winreg.HKEY_CURRENT_USER,
-        r"Software\Microsoft\Windows\CurrentVersion\Run",
-        0,
-        winreg.KEY_SET_VALUE | winreg.KEY_QUERY_VALUE,
-    )
-
-
-def enable_main_window_chrome(window) -> None:
-    """Restore resize/minimize/maximize after the fixed license activation window."""
-    from System import Func, Type
-    from System.Drawing import Size
-    from System.Windows.Forms import FormBorderStyle
-    from webview.platforms import winforms
-
-    window.resizable = True
-    window.min_size = (900, 420)
-
-    browser = winforms.BrowserView.instances.get(window.uid)
-    if browser is None:
-        return
-
-    def _apply() -> None:
-        scale = browser._scale
-        browser.FormBorderStyle = FormBorderStyle.Sizable
-        browser.MaximizeBox = True
-        browser.MinimizeBox = True
-        browser.MinimumSize = Size(int(900 * scale), int(420 * scale))
-
-    if browser.InvokeRequired:
-        browser.Invoke(Func[Type](_apply))
-    else:
-        _apply()
+    for name in ("planner.png", "planner.ico", "planner.icns"):
+        path = os.path.join(app_dir(), name)
+        if os.path.isfile(path):
+            return path
+    return platform_icon_path(app_dir())
 
 
 class Api:
@@ -283,7 +239,7 @@ class Api:
             except ImportError:
                 return
 
-            icon_file = icon_path()
+            icon_file = tray_icon_path()
             if not icon_file:
                 return
             image = Image.open(icon_file)
@@ -348,11 +304,19 @@ class Api:
 
     def get_app_info(self) -> dict:
         from license import LICENSE_DIR
+        from platform_support import is_macos, is_windows
 
+        if is_macos():
+            platform_name = "macos"
+        elif is_windows():
+            platform_name = "windows"
+        else:
+            platform_name = "desktop"
         return {
             "version": APP_VERSION,
             "dataDir": str(LICENSE_DIR),
             "autostart": self.get_autostart().get("enabled", False),
+            "platform": platform_name,
         }
 
     def get_license_info(self) -> dict:
@@ -377,6 +341,8 @@ class Api:
             if not target.exists():
                 LICENSE_DIR.mkdir(parents=True, exist_ok=True)
                 target = LICENSE_DIR
+            from platform_support import open_os_path
+
             open_os_path(target, reveal=target.is_file())
             return {"ok": True}
         except Exception as e:
@@ -384,6 +350,8 @@ class Api:
 
     def open_eula(self) -> dict:
         try:
+            from platform_support import open_os_path
+
             eula = eula_path()
             if not eula:
                 return {"ok": False, "error": "Файл EULA (LICENSE) не найден."}
@@ -394,9 +362,9 @@ class Api:
 
     def copy_text(self, text: str) -> dict:
         try:
-            import subprocess
+            from platform_support import copy_text_to_clipboard
 
-            subprocess.run("clip", input=str(text).encode("utf-16le"), check=True, shell=True)
+            copy_text_to_clipboard(str(text))
             return {"ok": True}
         except Exception as e:
             return {"ok": False, "error": str(e)}
@@ -463,32 +431,17 @@ class Api:
 
     def get_autostart(self) -> dict:
         try:
-            import winreg
+            from platform_support import get_autostart_enabled
 
-            key = _autostart_key()
-            try:
-                winreg.QueryValueEx(key, AUTOSTART_NAME)
-                enabled = True
-            except FileNotFoundError:
-                enabled = False
-            winreg.CloseKey(key)
-            return {"ok": True, "enabled": enabled}
+            return {"ok": True, "enabled": get_autostart_enabled(exe_path())}
         except Exception as e:
             return {"ok": False, "enabled": False, "error": str(e)}
 
     def set_autostart(self, enabled: bool) -> dict:
         try:
-            import winreg
+            from platform_support import set_autostart_enabled
 
-            key = _autostart_key()
-            if enabled:
-                winreg.SetValueEx(key, AUTOSTART_NAME, 0, winreg.REG_SZ, f'"{exe_path()}"')
-            else:
-                try:
-                    winreg.DeleteValue(key, AUTOSTART_NAME)
-                except FileNotFoundError:
-                    pass
-            winreg.CloseKey(key)
+            set_autostart_enabled(exe_path(), bool(enabled))
             return {"ok": True, "enabled": bool(enabled)}
         except Exception as e:
             return {"ok": False, "error": str(e)}
@@ -571,6 +524,8 @@ class Api:
         if not is_licensed():
             return {"ok": False, "error": "Лицензия не активирована."}
         try:
+            from platform_support import enable_main_window_chrome
+
             window = webview.windows[0]
             enable_main_window_chrome(window)
             self._attach_closing_handler(window)
@@ -582,41 +537,15 @@ class Api:
             return {"ok": False, "error": str(e)}
 
     def is_window_maximized(self) -> dict:
-        import webview
+        from platform_support import is_window_maximized
 
-        try:
-            from System.Windows.Forms import FormWindowState
-            from webview.platforms import winforms
-
-            browser = winforms.BrowserView.instances.get(webview.windows[0].uid)
-            if browser is None:
-                return {"ok": True, "maximized": False}
-            return {"ok": True, "maximized": browser.WindowState == FormWindowState.Maximized}
-        except Exception as e:
-            return {"ok": False, "maximized": False, "error": str(e)}
+        return is_window_maximized()
 
     def resize_window(self, client_width: int, client_height: int) -> dict:
-        import webview
-        from System import Func, Type
-        from System.Drawing import Size
-        from webview.platforms import winforms
-
         try:
-            target_w = max(int(client_width), 900)
-            target_h = max(int(client_height), 420)
-            window = webview.windows[0]
-            browser = winforms.BrowserView.instances.get(window.uid)
+            from platform_support import resize_window
 
-            def _apply() -> None:
-                browser.ClientSize = Size(target_w, target_h)
-
-            if browser is None:
-                window.resize(target_w, target_h)
-            elif browser.InvokeRequired:
-                browser.Invoke(Func[Type](_apply))
-            else:
-                _apply()
-            return {"ok": True, "width": target_w, "height": target_h}
+            return resize_window(client_width, client_height)
         except Exception as e:
             return {"ok": False, "error": str(e)}
 
@@ -663,13 +592,17 @@ def main() -> None:
             text_select=True,
             js_api=api,
         )
+    from platform_support import icon_path as platform_icon_path, webview_gui
+
     start_kwargs = {
-        "gui": "edgechromium",
         "http_server": False,
         "debug": False,
         "private_mode": False,
     }
-    icon = icon_path()
+    gui = webview_gui()
+    if gui:
+        start_kwargs["gui"] = gui
+    icon = platform_icon_path(app_dir())
     if icon:
         start_kwargs["icon"] = icon
     webview.start(**start_kwargs)

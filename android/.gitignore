@@ -4,6 +4,10 @@
 /.sdk
 /tools
 /.idea
+keystore.properties
+/keystore/
+*.jks
+*.keystore
 *.iml
 /captures
 .externalNativeBuild

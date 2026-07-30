@@ -4,10 +4,31 @@
 
 ## Запуск
 
-В корне лежит один файл **`Planer.exe`** — запускайте его двойным щелчком.
+### Windows
+
+В корне лежит **`Planer.exe`** — запускайте его двойным щелчком.
 
 1. Скачайте или клонируйте репозиторий.
 2. Запустите `Planer.exe`.
+
+### macOS
+
+Сборка выполняется **на Mac** (Python 3.10+):
+
+```bash
+cd src
+chmod +x build-mac.sh run-mac.sh
+./build-mac.sh
+```
+
+Результат — **`Planer.app`** в корне проекта. Для разработки без сборки:
+
+```bash
+cd src
+./run-mac.sh
+```
+
+Данные на Mac: `~/Library/Application Support/Planer/`
 
 Данные сохраняются локально на компьютере в **зашифрованном виде** (пароль задаётся при первом запуске).
 
@@ -16,7 +37,7 @@
 - **Лицензионный ключ** — обязателен при запуске `Planer.exe`
 - **Шифрование данных** — AES-GCM + PBKDF2, пароль пользователя
 - **Шифрованные бэкапы** — кнопки «Сохранить» / «Открыть»
-- **Автобэкап** — периодическое сохранение в `%APPDATA%\Planer\backups\`
+- **Автобэкап** — периодическое сохранение в папку данных (`%APPDATA%\Planer\backups\` на Windows, `~/Library/Application Support/Planer/backups/` на Mac)
 - **Обфускация JS** — код сжимается и упаковывается при сборке exe
 - **Защита от копирования** — в desktop-режиме блокируются контекстное меню, Ctrl+U, F12 и DevTools (Ctrl+S и выделение текста в полях работают)
 - **EULA** — см. файл `LICENSE`
@@ -80,7 +101,7 @@ python generate_key.py customer-001
 - Светлая / тёмная тема
 - Цвет текста интерфейса и цвета колонок
 - Смена пароля шифрования
-- Автозапуск с Windows
+- Автозапуск (Windows / macOS)
 - О программе (версия, путь к данным)
 
 ### Горячие клавиши
@@ -96,10 +117,13 @@ python generate_key.py customer-001
 ```
 planer/
   Planer.exe    — готовое приложение для Windows (один файл)
+  Planer.app    — готовое приложение для macOS (собирается на Mac)
   Planer.apk    — готовое приложение для Android (debug)
+  Planer-release.apk — Android release (подписанный, для установки на телефон)
   android/      — приложение для Android (WebView)
   src/          — исходники и сборка
     js/         — модули интерфейса
+    build-mac.sh, run-mac.sh — сборка и запуск на macOS
 ```
 
 ## Android
@@ -115,8 +139,10 @@ cd android
 
 Готовый debug-APK для Android: **`Planer.apk`** в корне репозитория.
 
+Подписанный release: **`Planer-release.apk`** (см. `android/build-release-apk.bat`).
 
-## Сборка exe
+
+## Сборка exe (Windows)
 
 ```bat
 cd src
@@ -124,6 +150,15 @@ build.bat
 ```
 
 Нужны Python 3, WebView2 Runtime и зависимости из `src/requirements-build.txt`. Перед сборкой закройте `Planer.exe`. Результат — один файл `Planer.exe` в корне проекта.
+
+## Сборка Planer.app (macOS)
+
+```bash
+cd src
+./build-mac.sh
+```
+
+Зависимости: `src/requirements-mac.txt`. PyInstaller создаёт `Planer.app` в корне проекта. Иконка `.icns` генерируется только при запуске `create_icon.py` на macOS.
 
 ## Тесты
 
@@ -136,6 +171,6 @@ python -m unittest test_planer.py
 
 Исходники в папке `src/`:
 - `index.html`, `styles.css`, `js/` — интерфейс
-- `launcher.py`, `bundle.py`, `build.bat` — сборка exe
+- `launcher.py`, `platform_support.py`, `paths.py`, `bundle.py`, `build.bat`, `build-mac.sh` — сборка desktop
 
 Для проверки в браузере откройте `src/index.html`.

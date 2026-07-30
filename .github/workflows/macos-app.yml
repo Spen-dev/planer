@@ -1,0 +1,32 @@
+name: Build macOS app
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - '.github/workflows/macos-app.yml'
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Build Planer.app
+        run: |
+          cd src
+          chmod +x build-mac.sh
+          ./build-mac.sh
+
+      - name: Upload Planer.app artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Planer-macos-app
+          path: Planer.app
+          if-no-files-found: error

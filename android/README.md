@@ -44,7 +44,32 @@
    ./gradlew assembleDebug
    ```
 
-APK: `android/app/build/outputs/apk/debug/app-debug.apk`
+APK debug: `android/app/build/outputs/apk/debug/app-debug.apk` → копируется скриптом в `Planer.apk`.
+
+### Release APK (подписанный)
+
+Для установки на телефон лучше использовать **release-сборку** — она подписывается вашим ключом, а не debug-ключом Android Studio.
+
+1. Создайте keystore (один раз):
+
+   ```powershell
+   cd android
+   .\create-keystore.ps1
+   ```
+
+   Пароль по умолчанию: `planer-change-me` (или задайте `PLANER_KEYSTORE_PASSWORD`).
+
+2. Соберите release:
+
+   ```powershell
+   .\build-release-apk.bat
+   ```
+
+   Результат: **`Planer-release.apk`** в корне репозитория.
+
+Файлы `keystore/` и `keystore.properties` **не коммитятся** — храните их локально и делайте резервную копию keystore.
+
+> Play Защита может всё равно предупреждать о «неизвестном разработчике», пока приложение не опубликовано в Google Play. Нажмите **«Подробнее» → «Всё равно установить»**.
 
 ## Разработка
 

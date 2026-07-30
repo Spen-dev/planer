@@ -23,6 +23,17 @@ async function loadAboutInfo() {
     if (info?.dataDir) dataEl.textContent = info.dataDir;
     const autostart = document.getElementById("autostartCheck");
     if (autostart && info) autostart.checked = Boolean(info.autostart);
+    if (info?.platform) {
+      const titles = {
+        windows: "Запускать с Windows",
+        macos: "Запускать при входе в macOS",
+        desktop: "Автозапуск при входе в систему",
+      };
+      const title = titles[info.platform] || titles.desktop;
+      const row = autostart?.closest("label");
+      if (row) row.title = title;
+      if (autostart) autostart.setAttribute("aria-label", title);
+    }
   } catch (_) { /* browser dev */ }
 }
 
